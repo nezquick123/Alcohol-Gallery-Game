@@ -29,8 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "shaderprogram.h"
 #include "myCube.h"
 
-float horizCamDirectSpeed = 0;//[radians/s]
-float vertCamDirectSpeed = 0; 
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 9.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 float moveSpeedx = 0;
@@ -115,15 +113,11 @@ void error_callback(int error, const char* description) {
 
 
 
-//Procedura obs³ugi klawiatury
+//Procedura obsÅ‚ugi klawiatury
 void key_callback(GLFWwindow* window, int key,
 	int scancode, int action, int mods) {
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_LEFT) horizCamDirectSpeed = -PI; //Je¿eli wciœniêto klawisz "w lewo" ustaw prêdkoœæ na -PI
-		if (key == GLFW_KEY_RIGHT) horizCamDirectSpeed = PI; //Je¿eli wciœniêto klawisz "w prawo" ustaw prêdkoœæ na PI
-		if (key == GLFW_KEY_UP) vertCamDirectSpeed = PI; //Je¿eli wciœniêto klawisz "w gore" ustaw prêdkoœæ na PI
-		if (key == GLFW_KEY_DOWN) vertCamDirectSpeed = -PI; //Je¿eli wciœniêto klawisz "w dol" ustaw prêdkoœæ na -PI
 		if (key == GLFW_KEY_W) moveSpeedx = -0.5f;
 		if (key == GLFW_KEY_S) moveSpeedx = 0.5f;
 		if (key == GLFW_KEY_A) moveSpeedz = -0.5f;
@@ -132,8 +126,6 @@ void key_callback(GLFWwindow* window, int key,
 	}
 
 	if (action == GLFW_RELEASE) {
-		if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT) horizCamDirectSpeed = 0;
-		if (key == GLFW_KEY_UP || key == GLFW_KEY_DOWN) vertCamDirectSpeed = 0;
 		if (key == GLFW_KEY_S || key == GLFW_KEY_W) moveSpeedx = 0;
 		if (key == GLFW_KEY_A || key == GLFW_KEY_D) moveSpeedz = 0;
 	}
@@ -257,7 +249,7 @@ void drawRoom(float offset) {
 
 
 //Drawing procedure
-void drawScene(GLFWwindow* window, float angle, float vertAngle) {
+void drawScene(GLFWwindow* window) {
 	//************Place any code here that draws something inside the window******************l
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear color and depth buffers
 	
@@ -312,15 +304,13 @@ int main(void)
 	initOpenGLProgram(window); //Call initialization procedure
 
 	//Main application loop
-	float horizAngle = 0; //declare variable for storing current rotation angle
-	float vertAngle = 0;
+
 	glfwSetTime(0); //clear internal timer
 	while (!glfwWindowShouldClose(window)) //As long as the window shouldnt be closed yet...
 	{
-		horizAngle += horizCamDirectSpeed * glfwGetTime(); //Compute an angle by which the object was rotated during the previous frame
-		vertAngle += vertCamDirectSpeed * glfwGetTime(); //Compute an angle by which the object was rotated during the previous frame
+		
 		glfwSetTime(0); //clear internal timer
-		drawScene(window, horizAngle, vertAngle); //Execute drawing procedure
+		drawScene(window); //Execute drawing procedure
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
 	freeOpenGLProgram(window);
