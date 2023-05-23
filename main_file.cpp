@@ -28,15 +28,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "lodepng.h"
 #include "shaderprogram.h"
 #include "myCube.h"
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <scene.h>
+#include <iostream>
+#include <vector>
+#include <math.h>
+void textureCube(glm::mat4 M, GLuint tex);
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 9.0f);
+GLuint tex0;
+GLuint tex1;
+glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 tempCam = cameraPos;
 float moveSpeedx = 0;
 float moveSpeedz = 0;
 ShaderProgram* sp; //Pointer to the shader program
-GLuint tex0;
-GLuint tex1;
 
+
+std::vector<glm::vec4> verts;
+std::vector<glm::vec4> norms;
+std::vector<glm::vec2> texCoordsv2;
+std::vector<unsigned int> indices;
 
 bool firstMouse = true;
 float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
@@ -80,6 +93,45 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	cameraFront = glm::normalize(front);
 }
+void loadModel(std::string filename){
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals);
+	printf(importer.GetErrorString());
+
+	if (scene->HasMeshes()) {
+		for (int i = 0; i < scene->mNumMeshes; i++) {
+			auto mesh = scene->mMeshes[i];
+			for (int j = 0; j < mesh->mNumVertices; j++) {
+
+				aiVector3D vertex = mesh->mVertices[j];
+				verts.push_back(glm::vec4(vertex.x, vertex.y, vertex.z, 1));
+				aiVector3D normal = mesh->mNormals[j];
+				norms.push_back(glm::vec4(normal.x, normal.y, normal.z, 0));
+				/*
+				unsigned int liczba_zest = mesh->GetNumUVChannels();
+				unsigned int wymiar_wsp_tex = mesh->mNumUVComponents[0]; */
+				aiVector3D texCoord = mesh->mTextureCoords[0][j];
+				texCoordsv2.push_back(glm::vec2(texCoord.x, texCoord.y));
+			}
+
+			for (int j = 0; j < mesh->mNumFaces; j++) {
+				auto face = mesh->mFaces[j];
+				for (int k = 0; k < face.mNumIndices; k++) {
+					indices.push_back(face.mIndices[k]);
+				}
+			}
+			
+			if (scene->HasMaterials()) {
+				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+				for (int j = 0; j < 19; j++) {
+					std::cout << j << " " << material->GetTextureCount((aiTextureType)j) << std::endl;
+				}
+			}
+			
+		}
+	}
+}
+
 GLuint readTexture(const char* filename) { //global declaration
 	GLuint tex;
 	glActiveTexture(GL_TEXTURE0);
@@ -104,7 +156,7 @@ float* texCoords = myCubeTexCoords;
 float* colors = myCubeColors;
 float* normals = myCubeNormals;
 int vertexCount = myCubeVertexCount;
-
+bool close = false;
 //Error processing callback procedure
 void error_callback(int error, const char* description) {
 	fputs(description, stderr);
@@ -122,6 +174,7 @@ void key_callback(GLFWwindow* window, int key,
 		if (key == GLFW_KEY_S) moveSpeedx = 0.5f;
 		if (key == GLFW_KEY_A) moveSpeedz = -0.5f;
 		if (key == GLFW_KEY_D) moveSpeedz = 0.5f;
+		if (key == GLFW_KEY_ESCAPE) close = true;
 		
 	}
 
@@ -146,6 +199,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	sp = new ShaderProgram("v_simplest.glsl", NULL, "f_simplest.glsl");
 	tex0 = readTexture("wall_1.png");
 	tex1 = readTexture("floor_text.png");
+	//loadModel("models/objBeer.obj");
 }
 
 //Release resources allocated by the program
@@ -155,8 +209,186 @@ void freeOpenGLProgram(GLFWwindow* window) {
 	//************Place any code here that needs to be executed once, after the main loop ends************
 }
 
+enum wallType{BASIC, WINDOWS, DOOR};
 
-void textureModel(glm::mat4 M, GLuint tex) {
+class Wall {
+	int height;
+	float floorH;
+public:
+	Wall(int h, float fh) {
+		height = h;
+		floorH = fh;
+	}
+
+	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, float rotateAngle = 0) {
+
+		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+		Mp = glm::translate(Mb, glm::vec3(coords.x - cubeScal.x + 2 * cubeScal.x, floorH + coords.y * 2 * cubeScal.y, coords.z - cubeScal.z + 2 * cubeScal.z));
+		Mp = glm::scale(Mp, cubeScal);
+		textureCube(Mp, tex);
+	}
+
+	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, glm::vec3 plateScal, float range, wallType wt = BASIC) {
+
+		glm::vec3 plateCoords;
+		int min, max;
+		int j = 0;
+		if (rotated) {//z axis
+			for (float h = 0; h <= height; h += 1) {
+				for (float i = -range, j = 0; i < range; i += 2 * plateScal.z, j++) {
+					if (wt == DOOR) {
+						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
+							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, 90);
+					}
+					else if (wt == WINDOWS) {
+						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
+							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, 90);
+					}
+					else
+						drawPlate(M, glm::vec3(var, h, i), plateScal, tex, 90);
+				}
+			}
+		}
+		else {
+			for (float h = 0; h <= height; h += 1) {
+				for (float i = -range, j = 0; i < range; i += 2 * plateScal.x, j++) {
+					if (wt == DOOR) {
+						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
+							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0);
+					}
+					else if (wt == WINDOWS) {
+						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
+							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0);
+					}
+					else 
+						drawPlate(M, glm::vec3(i, h, var), plateScal, tex0);
+				}
+
+			}
+		}
+	}
+};
+
+class Floor {
+private:
+	glm::vec3 plateScalNotRot = glm::vec3(1.0f, 1.0f, 0.125f);
+	glm::vec3 plateScalRot = glm::vec3(0.125f, 1.0f, 1.0f);
+	glm::vec3 floorScaleVec = glm::vec3(10.0f, 0.125f, 10.0f);
+	int height = 5;
+	int roomNum = 5;
+
+public:
+	void draw(float offset) {//offset of rooms relative to X axis
+		bool rotFlag = false;
+		if (offset > 0.0f) //negative offset means that rooms need to be rotated by 180 degrees around Y axis
+		{
+			rotFlag = true;
+			offset *= -1;
+		}
+
+		for (int rn = 0; rn <= roomNum -1; rn++) { //room number
+			int roomCoord = -50 + 20 * rn;
+			glm::mat4 Ms = glm::mat4(1.0f);
+			if (rotFlag) //rotate and correct x offset
+			{
+				Ms = glm::rotate(Ms, PI, glm::vec3(0.0f, 1.0f, 0.0f));
+				Ms = glm::translate(Ms, glm::vec3(20.0f, 0.0f, offset));
+			}
+			Ms = glm::translate(Ms, glm::vec3((float)roomCoord, 0.0f, offset));
+			Wall wall(height, floorScaleVec.y);
+			wall.drawWall(0, Ms, floorScaleVec.x, tex0, plateScalNotRot, floorScaleVec.x, DOOR);
+			wall.drawWall(0, Ms, -floorScaleVec.x, tex0, plateScalNotRot, floorScaleVec.x, WINDOWS);
+			wall.drawWall(1, Ms, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z);
+			wall.drawWall(1, Ms, -floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z);
+
+			//floor
+			glm::mat4 Mp = glm::scale(Ms, floorScaleVec);
+			textureCube(Mp, tex1);
+
+			//corridor
+			if (rotFlag) { //just for one side
+				glm::mat4 Mc = glm::mat4(1.0f);
+				Mc = glm::translate(Mc, glm::vec3((float)roomCoord, 0.0f, 0.0f));
+				if (rn == 0) {
+					glm::mat4 Mw = glm::translate(Mc, glm::vec3(-20.0f, 0.0f, 0.0f));
+					wall.drawWall(1, Mw, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z, DOOR);
+				}
+				if (rn == roomNum-1) {
+					glm::mat4 Mw = glm::translate(Mc, glm::vec3(0.0f, 0.0f, 0.0f));
+					wall.drawWall(1, Mw, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z, WINDOWS);
+				}
+				Mc = glm::scale(Mc, glm::vec3(floorScaleVec.x, floorScaleVec.y, floorScaleVec.z));
+				textureCube(Mc, tex1);
+			}
+		}
+
+	}
+
+};
+
+float collisionXtab[4] = { -40.0f, -20.0f, 0.0f, 20.0f };
+float precisionWall = 1.3f;
+float doorWidth = 1.8f;
+float doorsCoordPos[5] = { -55.0f, -35.0f, -15.0f, 5.0f, 25.0f};
+float doorsCoordNeg[5] = { -45.0f, -25.0f, -5.0f, 15.0f, 35.0f };
+bool collisionDetected(glm::vec3 pos) {
+	
+	if (pos.z > 28.0f || pos.z < -28.0f || pos.x > 38.0f || pos.x < -58.0f) { //boundaries detection
+		std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
+		return true;
+	}
+	else if (pos.z > 8.5f || pos.z < -8.5f) {
+		for (int i = 0; i < 4; i++) {
+			if (abs(pos.x - collisionXtab[i]) < precisionWall) {
+				return true;
+			}
+		}
+		if (abs(pos.z - 10.0f) < precisionWall*2) {
+			std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
+			for (int i = 0; i < 5; i++) {
+				if (abs(pos.x - doorsCoordPos[i]) < doorWidth)
+					return false;
+			}
+			return true;
+		}
+		if (abs(pos.z + 10.0f) < precisionWall*2) {
+			std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
+			for (int i = 0; i < 5; i++) {
+				if (abs(pos.x - doorsCoordNeg[i]) < doorWidth)
+					return false;
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
+void textureCustom(glm::mat4 M, GLuint tex) {//TODO: verts norms and texcoords to add for multiple models
+	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
+	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
+	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, verts.data()); //Specify source of the data for the attribute vertex
+
+	glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
+	glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, norms.data()); //Specify source of the data for the attribute normal
+
+
+	glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
+	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, texCoordsv2.data()); //Specify source of the data for the attribute normal
+	glUniform1i(sp->u("textureMap0"), 5);
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	/// //////////////////////////////////////
+
+	//glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
+	glDisableVertexAttribArray(sp->a("texCoord"));
+	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
+	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
+	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+}
+
+
+void textureCube(glm::mat4 M, GLuint tex) {
 	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
 	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
 	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
@@ -181,81 +413,19 @@ void textureModel(glm::mat4 M, GLuint tex) {
 	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
 }
-
-void drawPlate(glm::mat4 Mb, float x, float y, float z, glm::vec3 floorScale, glm::vec3 cubeScal, GLuint tex, float rotateAngle=0) {
-
-	glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-	Mp = glm::translate(Mb, glm::vec3(x - cubeScal.x + 2 * cubeScal.x, floorScale.y + y* 2 * cubeScal.y, z - cubeScal.z + 2 * cubeScal.z));
-	Mp = glm::scale(Mp, cubeScal);
-	textureModel(Mp, tex);
-	
-}
-
-void drawRoom(float offset) {
-	bool rotFlag = false;
-	if (offset > 0.0f) //negative offset means that rooms need to be rotated by 180 degrees around Y axis
-	{
-		rotFlag = true;
-		offset *= -1;
-	}
-	glm::vec3 wallScalx = glm::vec3(1.0f, 1.0f, 0.125f);
-	glm::vec3 wallScalz = glm::vec3(0.125f, 1.0f, 1.0f);
-	//Cube
-	glm::vec3 floorScaleVec = glm::vec3(10.0f, 0.125f, 10.0f);
-
-	for (int i = -50; i < 50; i += 20) {
-
-		glm::mat4 Ms = glm::mat4(1.0f);
-		if (rotFlag) //rotate and correct x offset
-		{
-			Ms = glm::rotate(Ms, PI, glm::vec3(0.0f, 1.0f, 0.0f));
-			Ms = glm::translate(Ms, glm::vec3(20.0f, 0.0f, offset));
-		}
-		
-		Ms = glm::translate(Ms, glm::vec3((float)i, 0.0f, offset));
-		
-
-		//draw surrounding walls
-		int height = 5;
-		int j = 0;
-		for (float h = 0; h <= height; h += 1) {
-
-			for (float i = -floorScaleVec.x, j = 0; i < floorScaleVec.x; i += 2 * wallScalx.x, j++) {
-				if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-					drawPlate(Ms, i, h, floorScaleVec.z, floorScaleVec, wallScalx, tex0);
-				if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))// okna
-					drawPlate(Ms, i, h, -floorScaleVec.z, floorScaleVec, wallScalx, tex0);
-
-			}
-			for (float i = -floorScaleVec.z, j = 0; i < floorScaleVec.z; i += 2 * wallScalz.z, j++) {
-				drawPlate(Ms, floorScaleVec.x, h, i, floorScaleVec, wallScalz, tex0, 90);
-				drawPlate(Ms, -floorScaleVec.x, h, i, floorScaleVec, wallScalz, tex0, 90);
-			}
-		}
-
-		//floor
-		glm::mat4 Mp = glm::scale(Ms, floorScaleVec);
-		textureModel(Mp, tex1);
-	}
-	//corridor
-	for (int i = -50; i < 50; i += 20) {
-
-		glm::mat4 Ms = glm::mat4(1.0f);
-		Ms = glm::translate(Ms, glm::vec3((float)i, 0.0f, 0.0f));
-		Ms = glm::scale(Ms, floorScaleVec);
-		textureModel(Ms, tex1);
-	}
-}
-
+Floor f;
 
 //Drawing procedure
 void drawScene(GLFWwindow* window) {
 	//************Place any code here that draws something inside the window******************l
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear color and depth buffers
-	
+	tempCam = cameraPos;
 	cameraPos -= glm::vec3(cameraFront.x * moveSpeedx, 0, cameraFront.z * moveSpeedx);
 	cameraPos += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeedz;
-
+	
+	if (collisionDetected(cameraPos)) {
+		cameraPos = tempCam;
+	}
 	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z);
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 150.0f); //Compute projection matrix
 	glm::mat4 V = glm::lookAt(cameraPos, cameraPos + cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
@@ -267,9 +437,12 @@ void drawScene(GLFWwindow* window) {
 	glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
 
 	glm::mat4 M = glm::mat4(1.0f);
-	//M = glm::translate(M, cameraPos);
-	drawRoom(10.0f);
-	drawRoom(-20.0f);
+	//M = glm::rotate(M, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+	//textureCustom(M, tex1);
+	M = glm::translate(M, cameraPos);
+	
+	f.draw(10.0f);
+	f.draw(-20.0f); 
 	glfwSwapBuffers(window); //Copy back buffer to the front buffer
 }
 
@@ -306,7 +479,7 @@ int main(void)
 	//Main application loop
 
 	glfwSetTime(0); //clear internal timer
-	while (!glfwWindowShouldClose(window)) //As long as the window shouldnt be closed yet...
+	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
 		
 		glfwSetTime(0); //clear internal timer
