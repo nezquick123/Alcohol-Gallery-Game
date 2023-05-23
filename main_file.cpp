@@ -331,36 +331,55 @@ float precisionWall = 1.3f;
 float doorWidth = 1.8f;
 float doorsCoordPos[5] = { -55.0f, -35.0f, -15.0f, 5.0f, 25.0f};
 float doorsCoordNeg[5] = { -45.0f, -25.0f, -5.0f, 15.0f, 35.0f };
-bool collisionDetected(glm::vec3 pos) {
-	
-	if (pos.z > 28.0f || pos.z < -28.0f || pos.x > 38.0f || pos.x < -58.0f) { //boundaries detection
-		std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
-		return true;
+int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x axis, 2 - wall parallel to z axis, 3 - both(corner)
+	bool xwall = false;
+	bool zwall = false;//TODO: find better name  ( ͡° ͜ʖ ͡°)
+	if (pos.z > 28.0f || pos.z < -28.0f){ //boundaries detection
+		//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
+		zwall = true;
 	}
-	else if (pos.z > 8.5f || pos.z < -8.5f) {
+	if (pos.x > 38.0f || pos.x < -58.0f) {
+		xwall = true;
+	}
+	if (pos.z > 8.5f || pos.z < -8.5f) {
 		for (int i = 0; i < 4; i++) {
 			if (abs(pos.x - collisionXtab[i]) < precisionWall) {
-				return true;
+				xwall = true;
 			}
 		}
-		if (abs(pos.z - 10.0f) < precisionWall*2) {
+		if (abs(pos.z - 10.0f) < 1.3f) {
 			std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
-				if (abs(pos.x - doorsCoordPos[i]) < doorWidth)
-					return false;
+				if (abs(pos.x - doorsCoordPos[i]) < doorWidth) {
+					std::cout << zwall << std::endl;
+					zwall = false;
+					break;
+				}
+				zwall = true;
+				xwall = true;
 			}
-			return true;
+			
 		}
-		if (abs(pos.z + 10.0f) < precisionWall*2) {
+		else if (abs(pos.z + 10.0f) < 1.3f) {
 			std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
-				if (abs(pos.x - doorsCoordNeg[i]) < doorWidth)
-					return false;
+				if (abs(pos.x - doorsCoordNeg[i]) < doorWidth) {
+					zwall = false;
+					break;
+				}
+				zwall = true;
+				xwall = true;
 			}
-			return true;
+			
 		}
 	}
-	return false;
+	if (xwall && zwall)
+		return 3;
+	else if (xwall)
+		return 1;
+	else if (zwall)
+		return 2;
+	return 0;
 }
 
 void textureCustom(glm::mat4 M, GLuint tex) {//TODO: verts norms and texcoords to add for multiple models
@@ -423,8 +442,18 @@ void drawScene(GLFWwindow* window) {
 	cameraPos -= glm::vec3(cameraFront.x * moveSpeedx, 0, cameraFront.z * moveSpeedx);
 	cameraPos += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeedz;
 	
-	if (collisionDetected(cameraPos)) {
-		cameraPos = tempCam;
+	if (collisionDetected(cameraPos) == 3) {
+		cameraPos.x = tempCam.x;
+		cameraPos.z = tempCam.z;
+		std::cout << "3" << std::endl;
+	}
+	else if (collisionDetected(cameraPos) == 1) {
+		cameraPos.x = tempCam.x;
+		std::cout << "1" << std::endl;
+	}
+	else if (collisionDetected(cameraPos) == 2) {
+		cameraPos.z = tempCam.z;
+		std::cout << "2" << std::endl;
 	}
 	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z);
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 150.0f); //Compute projection matrix
