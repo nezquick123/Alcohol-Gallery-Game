@@ -170,10 +170,10 @@ void key_callback(GLFWwindow* window, int key,
 	int scancode, int action, int mods) {
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_W) moveSpeedx = -0.5f;
-		if (key == GLFW_KEY_S) moveSpeedx = 0.5f;
-		if (key == GLFW_KEY_A) moveSpeedz = -0.5f;
-		if (key == GLFW_KEY_D) moveSpeedz = 0.5f;
+		if (key == GLFW_KEY_W) moveSpeedx = -0.8f;
+		if (key == GLFW_KEY_S) moveSpeedx = 0.8f;
+		if (key == GLFW_KEY_A) moveSpeedz = -0.8f;
+		if (key == GLFW_KEY_D) moveSpeedz = 0.8f;
 		if (key == GLFW_KEY_ESCAPE) close = true;
 		
 	}
@@ -223,7 +223,7 @@ public:
 	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, float rotateAngle = 0) {
 
 		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		Mp = glm::translate(Mb, glm::vec3(coords.x - cubeScal.x + 2 * cubeScal.x, floorH + coords.y * 2 * cubeScal.y, coords.z - cubeScal.z + 2 * cubeScal.z));
+		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x, floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z));
 		Mp = glm::scale(Mp, cubeScal);
 		textureCube(Mp, tex);
 	}
@@ -302,9 +302,12 @@ public:
 			wall.drawWall(1, Ms, -floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z);
 
 			//floor
-			glm::mat4 Mp = glm::scale(Ms, floorScaleVec);
-			textureCube(Mp, tex1);
-
+			for (int i = 0; i < 2; i++) {
+				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y*2, 0.0f));//ceiling if i == 1
+				Mp = glm::scale(Mp, floorScaleVec);
+				textureCube(Mp, tex1);
+			}
+			
 			//corridor
 			if (rotFlag) { //just for one side
 				glm::mat4 Mc = glm::mat4(1.0f);
@@ -314,11 +317,14 @@ public:
 					wall.drawWall(1, Mw, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z, DOOR);
 				}
 				if (rn == roomNum-1) {
-					glm::mat4 Mw = glm::translate(Mc, glm::vec3(0.0f, 0.0f, 0.0f));
-					wall.drawWall(1, Mw, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z, WINDOWS);
+					wall.drawWall(1, Mc, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z, WINDOWS);
 				}
-				Mc = glm::scale(Mc, glm::vec3(floorScaleVec.x, floorScaleVec.y, floorScaleVec.z));
-				textureCube(Mc, tex1);
+				for (int i = 0; i < 2; i++) {
+					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
+					Mc = glm::scale(Mc, floorScaleVec);
+					textureCube(Mc, tex1);
+					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
+				}
 			}
 		}
 
@@ -328,7 +334,7 @@ public:
 
 float collisionXtab[4] = { -40.0f, -20.0f, 0.0f, 20.0f };
 float precisionWall = 1.3f;
-float doorWidth = 1.8f;
+float doorWidth = 2.0f;
 float doorsCoordPos[5] = { -55.0f, -35.0f, -15.0f, 5.0f, 25.0f};
 float doorsCoordNeg[5] = { -45.0f, -25.0f, -5.0f, 15.0f, 35.0f };
 int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x axis, 2 - wall parallel to z axis, 3 - both(corner)
@@ -348,29 +354,30 @@ int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x
 			}
 		}
 		if (abs(pos.z - 10.0f) < 1.3f) {
-			std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
+			//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
 				if (abs(pos.x - doorsCoordPos[i]) < doorWidth) {
-					std::cout << zwall << std::endl;
+					//std::cout << zwall << std::endl;
+					xwall = true;
 					zwall = false;
 					break;
 				}
 				zwall = true;
-				xwall = true;
 			}
 			
 		}
 		else if (abs(pos.z + 10.0f) < 1.3f) {
-			std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
+			//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
 				if (abs(pos.x - doorsCoordNeg[i]) < doorWidth) {
+					xwall = true;
 					zwall = false;
 					break;
 				}
 				zwall = true;
-				xwall = true;
+				//xwall = true;
 			}
-			
+			//xwall = false;
 		}
 	}
 	if (xwall && zwall)
@@ -449,11 +456,11 @@ void drawScene(GLFWwindow* window) {
 	}
 	else if (collisionDetected(cameraPos) == 1) {
 		cameraPos.x = tempCam.x;
-		std::cout << "1" << std::endl;
+		//std::cout << "1" << std::endl;
 	}
 	else if (collisionDetected(cameraPos) == 2) {
 		cameraPos.z = tempCam.z;
-		std::cout << "2" << std::endl;
+		//std::cout << "2" << std::endl;
 	}
 	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z);
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 150.0f); //Compute projection matrix
