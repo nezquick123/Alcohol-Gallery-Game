@@ -218,11 +218,11 @@ enum wallType{BASIC, WINDOWS, DOOR};
 float sinarg = 0;
 float drunk_coef = 1.3f;
 
-class Wall {
+class Room {
 	int height;
 	float floorH;
 public:
-	Wall(int h, float fh) {
+	Room(int h, float fh) {
 		height = h;
 		floorH = fh;
 	}
@@ -240,12 +240,8 @@ public:
 		else
 			scalz = abs(drunkfun)*5;
 		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		//Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x, floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z)); //original
 		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x  + drunkfun , floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
 		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
-		/*if (reflected)
-			drunkfun *= -1;*/
-		//Mp = glm::scale(Mp, glm::vec3(cubeScal.x*(drunkfun/(coords.x + cubeScal.x) + 1), cubeScal.y, cubeScal.z*(drunkfun/(coords.z + cubeScal.z)+1)));
 		textureCube(Mp, tex, lpmain);
 	}
 
@@ -316,7 +312,7 @@ public:
 				Ms = glm::translate(Ms, glm::vec3(20.0f, 0.0f, offset));
 			}
 			Ms = glm::translate(Ms, glm::vec3((float)roomCoord, 0.0f, offset));
-			Wall wall(height, floorScaleVec.y);
+			Room wall(height, floorScaleVec.y);
 			wall.drawWall(0, Ms, floorScaleVec.x, tex0, plateScalNotRot, floorScaleVec.x, rotFlag, DOOR);
 			wall.drawWall(0, Ms, -floorScaleVec.x, tex0, plateScalNotRot, floorScaleVec.x, rotFlag, WINDOWS);
 			wall.drawWall(1, Ms, floorScaleVec.z, tex0, plateScalRot, floorScaleVec.z, rotFlag);
