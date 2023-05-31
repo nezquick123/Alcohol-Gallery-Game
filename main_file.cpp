@@ -295,7 +295,8 @@ void initOpenGLProgram(GLFWwindow* window) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-float drunk_coef = 2.0f;
+float drunk_coef = 5.0f;
+
 
 class Room {
 	int height;
