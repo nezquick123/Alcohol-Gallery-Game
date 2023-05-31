@@ -11,7 +11,12 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ATTRIBUTIONS:
+wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768392.htm#query=wood%20texture&position=2&from_view=search&track=ais
+
 */
+
 
 
 #define GLM_FORCE_RADIANS
@@ -39,6 +44,10 @@ void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 GLuint tex0;
 GLuint tex1;
 GLuint skytex;
+GLuint woodtex;
+GLuint orangeGlass;
+
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 tempCam = cameraPos;
@@ -48,10 +57,8 @@ ShaderProgram* sp; //Pointer to the shader program
 glm::vec4 lpmain = glm::vec4(0, 9, 0, 1); //light position, world space
 
 
-std::vector<glm::vec4> verts;
-std::vector<glm::vec4> norms;
-std::vector<glm::vec2> texCoordsv2;
-std::vector<unsigned int> indices;
+
+
 
 bool firstMouse = true;
 float yaw = -90.0f;	// yaw is initialized to -90.0 degrees since a yaw of 0.0 results in a direction vector pointing to the right so we initially rotate a bit to the left.
@@ -94,44 +101,6 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	front.y = sin(glm::radians(pitch));
 	front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	cameraFront = glm::normalize(front);
-}
-void loadModel(std::string filename){
-	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals);
-	printf(importer.GetErrorString());
-
-	if (scene->HasMeshes()) {
-		for (int i = 0; i < scene->mNumMeshes; i++) {
-			auto mesh = scene->mMeshes[i];
-			for (int j = 0; j < mesh->mNumVertices; j++) {
-
-				aiVector3D vertex = mesh->mVertices[j];
-				verts.push_back(glm::vec4(vertex.x, vertex.y, vertex.z, 1));
-				aiVector3D normal = mesh->mNormals[j];
-				norms.push_back(glm::vec4(normal.x, normal.y, normal.z, 0));
-				/*
-				unsigned int liczba_zest = mesh->GetNumUVChannels();
-				unsigned int wymiar_wsp_tex = mesh->mNumUVComponents[0]; */
-				aiVector3D texCoord = mesh->mTextureCoords[0][j];
-				texCoordsv2.push_back(glm::vec2(texCoord.x, texCoord.y));
-			}
-
-			for (int j = 0; j < mesh->mNumFaces; j++) {
-				auto face = mesh->mFaces[j];
-				for (int k = 0; k < face.mNumIndices; k++) {
-					indices.push_back(face.mIndices[k]);
-				}
-			}
-			
-			if (scene->HasMaterials()) {
-				aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-				for (int j = 0; j < 19; j++) {
-					std::cout << j << " " << material->GetTextureCount((aiTextureType)j) << std::endl;
-				}
-			}
-			
-		}
-	}
 }
 
 GLuint readTexture(const char* filename) { //global declaration
@@ -190,6 +159,89 @@ void key_callback(GLFWwindow* window, int key,
 
 
 
+//Release resources allocated by the program
+void freeOpenGLProgram(GLFWwindow* window) {
+	freeShaders();
+	delete sp;
+	//************Place any code here that needs to be executed once, after the main loop ends************
+}
+
+class CustomModel {
+private:
+	std::vector <glm::vec4> verts;
+	std::vector <glm::vec4> norms;
+	std::vector <glm::vec2> texCoords;
+	std::vector <unsigned int> indices;
+
+public:
+	void loadTexture(std::string filename) {
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals);
+		printf(importer.GetErrorString());
+		if (scene->HasMeshes()) {
+			for (int i = 0; i < scene->mNumMeshes; i++) {
+				auto mesh = scene->mMeshes[i];
+				for (int j = 0; j < mesh->mNumVertices; j++) {
+
+					aiVector3D vertex = mesh->mVertices[j];
+					verts.push_back(glm::vec4(vertex.x, vertex.y, vertex.z, 1));
+					aiVector3D normal = mesh->mNormals[j];
+					norms.push_back(glm::vec4(normal.x, normal.y, normal.z, 0));
+					/*
+					unsigned int liczba_zest = mesh->GetNumUVChannels();
+					unsigned int wymiar_wsp_tex = mesh->mNumUVComponents[0];*/
+					aiVector3D texCoord = mesh->mTextureCoords[0][j];
+					texCoords.push_back(glm::vec2(texCoord.x, texCoord.y));
+				}
+
+				for (int j = 0; j < mesh->mNumFaces; j++) {
+					auto face = mesh->mFaces[j];
+					for (int k = 0; k < face.mNumIndices; k++) {
+						indices.push_back(face.mIndices[k]);
+					}
+				}
+
+				if (scene->HasMaterials()) {
+					aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+					for (int j = 0; j < 19; j++) {
+						std::cout << j << " " << material->GetTextureCount((aiTextureType)j) << std::endl;
+					}
+				}
+
+			}
+
+		}
+	}
+
+	void draw(glm::mat4 M, GLuint tex, glm::vec4 lp) {//TODO: verts norms and texcoords to add for multiple models
+		glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
+		glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
+		glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, verts.data()); //Specify source of the data for the attribute vertex
+
+		glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
+		glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, norms.data()); //Specify source of the data for the attribute normal
+
+		glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
+
+		glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
+		glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, texCoords.data()); //Specify source of the data for the attribute normal
+		glUniform1i(sp->u("textureMap0"), 5);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, tex);
+		/// //////////////////////////////////////
+
+		//glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
+		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
+		glDisableVertexAttribArray(sp->a("texCoord"));
+		glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
+		glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
+		glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+	}
+};
+
+CustomModel table;
+CustomModel bottle;
+
 //Initialization code procedure
 void initOpenGLProgram(GLFWwindow* window) {
 	initShaders();
@@ -203,15 +255,12 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex0 = readTexture("wall_1.png");
 	tex1 = readTexture("floor_text.png");
 	skytex = readTexture("sky.png");
-	//loadModel("models/objBeer.obj");
+	woodtex = readTexture("wood.png");
+	orangeGlass = readTexture("glass_orange.png");
+	table.loadTexture("models/tableround.obj");
+	bottle.loadTexture("models/Carafe_with_stopper.obj");
 }
 
-//Release resources allocated by the program
-void freeOpenGLProgram(GLFWwindow* window) {
-	freeShaders();
-	delete sp;
-	//************Place any code here that needs to be executed once, after the main loop ends************
-}
 
 enum wallType{BASIC, WINDOWS, DOOR};
 
@@ -409,31 +458,6 @@ int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x
 	return 0;
 }
 
-void textureCustom(glm::mat4 M, GLuint tex, glm::vec4 lp) {//TODO: verts norms and texcoords to add for multiple models
-	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
-	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
-	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, verts.data()); //Specify source of the data for the attribute vertex
-
-	glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, norms.data()); //Specify source of the data for the attribute normal
-
-	glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
-
-	glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, texCoordsv2.data()); //Specify source of the data for the attribute normal
-	glUniform1i(sp->u("textureMap0"), 5);
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	/// //////////////////////////////////////
-
-	//glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
-	glDisableVertexAttribArray(sp->a("texCoord"));
-	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
-	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
-	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
-}
-
 
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside) {
 	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
@@ -463,6 +487,8 @@ void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside) {
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
 }
 Floor f;
+
+
 
 //Drawing procedure
 void drawScene(GLFWwindow* window) {
@@ -496,10 +522,15 @@ void drawScene(GLFWwindow* window) {
 	glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
 
 	glm::mat4 M = glm::mat4(1.0f);
-	//M = glm::rotate(M, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-	//textureCustom(M, tex1);
+	M = glm::translate(M, glm::vec3(0.0f, 1.0f, 0.0f));
+	table.draw(M, woodtex, lpmain);
+	M = glm::translate(M, glm::vec3(1.0f, 2.0f, 1.0f));
+	M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
+	bottle.draw(M, orangeGlass, lpmain);
 
-	M = glm::translate(M, glm::vec3(0.0f, 0.0f, 0.0f));
+
+
+	M = glm::mat4(1.0f);
 	M = glm::scale(M, glm::vec3(100.0f, 100.0f, 100.0f));
 	textureCube(M, skytex, glm::vec4(0.0f, 360.0f, 0.0f, 1.0f), true);
 
