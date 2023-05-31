@@ -35,7 +35,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include "myCube.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
-#include <scene.h>
+#include <assimp/scene.h>
 #include <iostream>
 #include <vector>
 #include <math.h>
@@ -296,6 +296,7 @@ enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
 float drunk_coef = 5.0f;
+
 
 class Room {
 	int height;
