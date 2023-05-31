@@ -295,7 +295,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-float drunk_coef = 0.0f;
+float drunk_coef = 0.0f; //test conflict
 
 class Room {
 	int height;
