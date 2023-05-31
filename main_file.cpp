@@ -166,14 +166,48 @@ void freeOpenGLProgram(GLFWwindow* window) {
 	//************Place any code here that needs to be executed once, after the main loop ends************
 }
 
+class Collider {
+	glm::vec4 coord; //x1, x2, z1, z2
+public:
+	Collider(glm::vec4 vec = glm::vec4(0, 0, 0, 0)) {
+		coord = vec;
+	}
+	int contains(float x, float y) {
+		
+		if (coord == glm::vec4(0, 0, 0, 0)) {
+			return  0;
+		}
+			
+		/*if (x > coord.x && x < coord.y)
+		{
+			printf("1");
+			return 1;
+		}
+			if	( coord.z < y && coord.w >y)
+			{
+				printf("2");
+				return 2;
+			}
+		*/
+		if (x > coord.x && x < coord.y && coord.z < y && coord.w >y)
+		{
+			return 1;
+		}
+		return 0;
+	}
+};
+
 class CustomModel {
 private:
 	std::vector <glm::vec4> verts;
 	std::vector <glm::vec4> norms;
 	std::vector <glm::vec2> texCoords;
 	std::vector <unsigned int> indices;
-
+	
 public:
+	glm::vec3 pos;
+	glm::vec2 size;
+	Collider collider;
 	void loadTexture(std::string filename) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals);
@@ -497,17 +531,44 @@ void drawScene(GLFWwindow* window) {
 	tempCam = cameraPos;
 	cameraPos -= glm::vec3(cameraFront.x * moveSpeedx, 0, cameraFront.z * moveSpeedx);
 	cameraPos += glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeedz;
-	
-	if (collisionDetected(cameraPos) == 3) {
+	// colliders
+	int colliderCheck = 0;
+	int collRes = 0;
+	bool collx = false;
+	bool colly = false;
+	collRes = collisionDetected(cameraPos);
+	if (collRes == 3) {
+		collx = true;
+		colly = true;
+	}
+	else if (collRes == 1) {
+		collx = true;
+	}
+	else if (collRes == 2) {
+		colly = true;
+	}
+	colliderCheck = table.collider.contains(cameraPos.x - 1.0f, cameraPos.z - 1.0f); // -1.0f to compense a shift between hitbox and texture
+	if (colliderCheck == 1) {
+		collx = true;
+		colly = true;
+	}
+	else if (colliderCheck == 1) {//TO FIX
+		collx = true;
+	}
+	else if (colliderCheck == 2) {
+		colly = true;
+	}
+	//
+	if (collx && colly) {
 		cameraPos.x = tempCam.x;
 		cameraPos.z = tempCam.z;
 		std::cout << "3" << std::endl;
 	}
-	else if (collisionDetected(cameraPos) == 1) {
+	else if (collx) {
 		cameraPos.x = tempCam.x;
-		//std::cout << "1" << std::endl;
+		std::cout << "1" << std::endl;
 	}
-	else if (collisionDetected(cameraPos) == 2) {
+	else if (colly) {
 		cameraPos.z = tempCam.z;
 		//std::cout << "2" << std::endl;
 	}
@@ -522,8 +583,13 @@ void drawScene(GLFWwindow* window) {
 	glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
 
 	glm::mat4 M = glm::mat4(1.0f);
-	M = glm::translate(M, glm::vec3(0.0f, 1.0f, 0.0f));
+	table.pos = glm::vec3(3.0f, 1.0f, 3.0f);
+	M = glm::translate(M, table.pos);
+	table.size = glm::vec2(2.0f,2.0f);
 	table.draw(M, woodtex, lpmain);
+	table.collider = Collider(glm::vec4(table.pos.x - table.size.x, table.pos.x + table.size.x, table.pos.z - table.size.y, table.pos.z + table.size.y));
+
+
 	M = glm::translate(M, glm::vec3(1.0f, 2.0f, 1.0f));
 	M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
 	bottle.draw(M, orangeGlass, lpmain);
