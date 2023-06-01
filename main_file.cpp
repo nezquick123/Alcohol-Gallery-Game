@@ -26,6 +26,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/intersect.hpp>
 #include <stdlib.h>
 #include <stdio.h>
 #include "constants.h"
@@ -58,9 +59,6 @@ float moveSpeedx = 0;
 float moveSpeedz = 0;
 ShaderProgram* sp; //Pointer to the shader program
 glm::vec4 lpmain = glm::vec4(0, 9, 0, 1); //light position, world space
-
-
-
 
 
 bool firstMouse = true;
@@ -172,10 +170,52 @@ void freeOpenGLProgram(GLFWwindow* window) {
 
 class Collider {
 	glm::vec4 coord; //x1, x2, z1, z2
+	glm::mat3 triangs[4]; //boundary parallel to: ox, oy, ox, oy
+	glm::vec4 edges[4]; //boundary parallel to: ox, oy, ox, oy
+	glm::vec3 center = glm::vec3(0,0, 0);
+
 public:
-	Collider(glm::vec4 vec = glm::vec4(0, 0, 0, 0)) {
+	Collider(glm::vec4 vec = glm::vec4(0, 0, 0, 0)) {//x1 y1 x2 y2
 		coord = vec;
+		center.x = (vec.z - vec.x)/2 + vec.x;
+		center.z = (vec.w - vec.y)/2 + vec.y; 
+		//vec:  1 1 5 5
+		edges[0] = glm::vec4(vec.x, vec.y, vec.z, vec.y);
+		edges[1] = glm::vec4(vec.x, vec.w, vec.z, vec.w);
+		edges[2] = glm::vec4(vec.x, vec.y, vec.x, vec.w);
+		edges[3] = glm::vec4(vec.z, vec.y, vec.z, vec.w);
 	}
+	int doIntersect(glm::vec2 p1, glm::vec2 q1) {
+
+		bool xcoll = false;
+		bool ycoll = false;
+		for (int i = 0; i < 4; i++) {
+			// Sprawdzenie czy punkty są po różnych stronach odcinków
+			bool condition1 = ((p1.x - q1.x) * (edges[i].y - q1.y) > (p1.y - q1.y) * (edges[i].x - q1.x));
+			bool condition2 = ((p1.x - q1.x) * (edges[i].w - q1.y) > (p1.y - q1.y) * (edges[i].z - q1.x));
+			bool condition3 = ((edges[i].x - edges[i].z) * (p1.y - edges[i].w) > (edges[i].y - edges[i].w) * (p1.x - edges[i].z));
+			bool condition4 = ((edges[i].x - edges[i].z) * (q1.y - edges[i].w) > (edges[i].y - edges[i].w) * (q1.x - edges[i].z));
+
+			if ((condition1 != condition2) && (condition3 != condition4)){
+				if (i < 2 == 0) {
+					xcoll = true;
+				}
+				else
+					ycoll = true;
+			}
+		}
+		if (xcoll && ycoll)
+			return 3;
+		if (xcoll)
+			return 1;
+		if (ycoll)
+			return 2;
+		return 0;
+
+
+
+	}
+
 	int contains(float x, float y) {
 
 		if (coord == glm::vec4(0, 0, 0, 0)) {
@@ -188,6 +228,7 @@ public:
 		}
 		return 0;
 	}
+
 };
 
 class CustomModel {
@@ -267,7 +308,7 @@ public:
 };
 CustomModel table;
 CustomModel bottle;
-
+std::vector <CustomModel> collidingModels;
 //Initialization code procedure
 void initOpenGLProgram(GLFWwindow* window) {
 	initShaders();
@@ -289,6 +330,11 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
+
+	table.size = glm::vec2(2.0f, 2.0f);
+	table.pos = glm::vec3(2.0f, 1.0f, 2.0f);
+	table.collider = Collider(glm::vec4(table.pos.x - table.size.x, table.pos.z - table.size.y, table.pos.x + table.size.x, table.pos.z + table.size.y));
+	collidingModels.push_back(table);
 }
 
 
@@ -575,16 +621,18 @@ void drawScene(GLFWwindow* window) {
 	else if (collRes == 2) {
 		colly = true;
 	}
-	colliderCheck = table.collider.contains(cameraPos.x - 1.0f, cameraPos.z - 1.0f); // -1.0f to compense a shift between hitbox and texture
-	if (colliderCheck == 1) {
-		collx = true;
-		colly = true;
-	}
-	else if (colliderCheck == 1) {//TO FIX
-		collx = true;
-	}
-	else if (colliderCheck == 2) {
-		colly = true;
+	for (int i = 0; i < collidingModels.size(); i++) {
+		colliderCheck = collidingModels.at(i).collider.doIntersect(glm::vec2(tempCam.x, tempCam.z), glm::vec2(cameraPos.x, cameraPos.z)); // -1.0f to compense a shift between hitbox and texture
+		if (colliderCheck == 3) {
+			collx = true;
+			colly = true;
+		}
+		else if (colliderCheck == 1) {//TO FIX
+			collx = true;
+		}
+		else if (colliderCheck == 2) {
+			colly = true;
+		}
 	}
 	//
 	if (collx && colly) {
@@ -609,24 +657,21 @@ void drawScene(GLFWwindow* window) {
 	//Send parameters to graphics card
 	glUniformMatrix4fv(sp->u("P"), 1, false, glm::value_ptr(P));
 	glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
-
 	glm::mat4 M = glm::mat4(1.0f);
-	table.pos = glm::vec3(3.0f, 1.0f, 3.0f);
-	M = glm::translate(M, table.pos);
-	table.size = glm::vec2(2.0f,2.0f);
-	table.draw(M, woodtex, lpmain);
-	table.collider = Collider(glm::vec4(table.pos.x - table.size.x, table.pos.x + table.size.x, table.pos.z - table.size.y, table.pos.z + table.size.y));
-
-
+	for (int i = 0; i < collidingModels.size(); i++) {
+		M = glm::mat4(1.0f);
+		M = glm::translate(M, glm::vec3(collidingModels.at(i).pos.x - 1.0f, collidingModels.at(i).pos.y, collidingModels.at(i).pos.z - 1.0f));
+		collidingModels.at(i).draw(M, woodtex, lpmain);
+	}
 	M = glm::translate(M, glm::vec3(1.0f, 2.0f, 1.0f));
 	M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
 	bottle.draw(M, orangeGlass, lpmain);
 
 
-
+	//Skybox
 	M = glm::mat4(1.0f);
-	M = glm::scale(M, glm::vec3(100.0f, 100.0f, 100.0f));
-	textureCube(M, skytex, glm::vec4(0.0f, 360.0f, 0.0f, 1.0f), true);
+	M = glm::scale(M, glm::vec3(80.0f, 100.0f, 70.0f));
+	textureCube(M, skytex, glm::vec4(0.0f, 300.0f, 0.0f, 1.0f), true);
 
 	M = glm::mat4(1.0f);
 	M = glm::translate(M, cameraPos);
