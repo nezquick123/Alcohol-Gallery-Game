@@ -51,7 +51,7 @@ GLuint orangeGlass;
 GLuint texSpecWall;
 GLuint texSpecFloor;
 
-
+std::vector<glm::mat4> modelPos;
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 tempCam = cameraPos;
@@ -330,11 +330,19 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
-
-	table.size = glm::vec2(2.0f, 2.0f);
-	table.pos = glm::vec3(2.0f, 1.0f, 2.0f);
-	table.collider = Collider(glm::vec4(table.pos.x - table.size.x, table.pos.z - table.size.y, table.pos.x + table.size.x, table.pos.z + table.size.y));
-	collidingModels.push_back(table);
+	glm::vec3 positions[10];
+	for (int i = 0; i < 5; i++) {
+		positions[i] = glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f);
+	}
+	for (int i = 5; i < 10; i++) {
+		positions[i] = glm::vec3((i-5) * 20.0f - 50.0f, 1.0f, -21.0f);
+	}
+	for (int i = 0; i < 10; i++) {
+		table.size = glm::vec2(2.0f, 2.0f);
+		table.pos = positions[i];
+		table.collider = Collider(glm::vec4(table.pos.x - table.size.x, table.pos.z - table.size.y, table.pos.x + table.size.x, table.pos.z + table.size.y));
+		collidingModels.push_back(table);
+	}
 }
 
 
@@ -378,6 +386,9 @@ public:
 		glm::vec3 plateCoords;
 		int min, max;
 		int j = 0;
+
+		
+
 		if (rotated) {//z axis
 			for (float h = 0; h <= height; h += 1) {
 				for (float i = -range, j = 0; i < range; i += 2 * plateScal.z, j++) {
@@ -652,20 +663,31 @@ void drawScene(GLFWwindow* window) {
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 150.0f); //Compute projection matrix
 	glm::mat4 V = glm::lookAt(cameraPos, cameraPos + cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
 
- 
+	
 	sp->use();//activate shading program
 	//Send parameters to graphics card
 	glUniformMatrix4fv(sp->u("P"), 1, false, glm::value_ptr(P));
 	glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
+
+
+	//modelPos.clear();
+
+	
+	f.draw(10.0f);
+	f.draw(-20.0f); 
+
 	glm::mat4 M = glm::mat4(1.0f);
 	for (int i = 0; i < collidingModels.size(); i++) {
+		//tables drawing
 		M = glm::mat4(1.0f);
 		M = glm::translate(M, glm::vec3(collidingModels.at(i).pos.x - 1.0f, collidingModels.at(i).pos.y, collidingModels.at(i).pos.z - 1.0f));
 		collidingModels.at(i).draw(M, woodtex, lpmain);
+
+		//bottles drawing
+		M = glm::translate(M, glm::vec3(1.0f, 1.7f, 1.0f));
+		M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
+		bottle.draw(M, orangeGlass, lpmain);
 	}
-	M = glm::translate(M, glm::vec3(1.0f, 2.0f, 1.0f));
-	M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
-	bottle.draw(M, orangeGlass, lpmain);
 
 
 	//Skybox
@@ -675,12 +697,6 @@ void drawScene(GLFWwindow* window) {
 
 	M = glm::mat4(1.0f);
 	M = glm::translate(M, cameraPos);
-	
-	f.draw(10.0f);
-	f.draw(-20.0f); 
-
-
-
 	glfwSwapBuffers(window); //Copy back buffer to the front buffer
 }
 
