@@ -244,6 +244,10 @@ public:
 	Collider collider;
 	void loadTexture(std::string filename) {
 		Assimp::Importer importer;
+		verts.clear();
+		norms.clear();
+		texCoords.clear();
+		indices.clear();
 		const aiScene* scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenSmoothNormals);
 		printf(importer.GetErrorString());
 		if (scene->HasMeshes()) {
@@ -269,12 +273,6 @@ public:
 					}
 				}
 
-				if (scene->HasMaterials()) {
-					aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-					for (int j = 0; j < 19; j++) {
-						std::cout << j << " " << material->GetTextureCount((aiTextureType)j) << std::endl;
-					}
-				}
 
 			}
 
@@ -306,12 +304,17 @@ public:
 		glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
 	}
 };
+
+std::vector<std::string> bottleNames = {"models/Carafe_with_stopper.obj", "models/mybottle1.obj", "models/mybottle2.obj", "models/mybottle3.obj" };
+//jack working but too many meshes
 CustomModel table;
 CustomModel bottle;
+std::vector <CustomModel> bottleModels;//vector with bottles with diffrent models
 std::vector <CustomModel> collidingModels;
 //Initialization code procedure
 void initOpenGLProgram(GLFWwindow* window) {
 	initShaders();
+	srand(time(0));
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	//************Place any code here that needs to be executed once, at the program start************
 	glClearColor(0, 0, 0, 1); //Set color buffer clear color
@@ -325,11 +328,19 @@ void initOpenGLProgram(GLFWwindow* window) {
 	woodtex = readTexture("wood.png");
 	orangeGlass = readTexture("glass_orange.png");
 	table.loadTexture("models/tableround.obj");
-	bottle.loadTexture("models/Carafe_with_stopper.obj");
 	tex0 = readTexture("wood_texture.png");
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
+	
+	//bottles
+	for (int i = 0; i < 10; i++) {
+		int selectModel = rand() % bottleNames.size();
+		bottle.loadTexture(bottleNames[selectModel]);
+		bottleModels.push_back(bottle);
+	}
+	printf("Namessize: %d BottleSize %d", bottleNames.size(), bottleModels.size());
+	//Colliding models
 	glm::vec3 positions[10];
 	for (int i = 0; i < 5; i++) {
 		positions[i] = glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f);
@@ -683,13 +694,14 @@ void drawScene(GLFWwindow* window) {
 		M = glm::translate(M, glm::vec3(collidingModels.at(i).pos.x - 1.0f, collidingModels.at(i).pos.y, collidingModels.at(i).pos.z - 1.0f));
 		collidingModels.at(i).draw(M, woodtex, lpmain);
 
+		
 		//bottles drawing
 		M = glm::translate(M, glm::vec3(1.0f, 1.7f, 1.0f));
 		M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
-		bottle.draw(M, orangeGlass, lpmain);
+		bottleModels[i].draw(M, orangeGlass, lpmain);
 	}
 
-
+	
 	//Skybox
 	M = glm::mat4(1.0f);
 	M = glm::scale(M, glm::vec3(80.0f, 100.0f, 70.0f));
