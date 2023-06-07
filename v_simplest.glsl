@@ -12,6 +12,10 @@ in vec4 color; //vertex color
 in vec4 normal; //Vertex normal in model space
 in vec2 texCoord;
 
+in vec4 c1;
+in vec4 c2;
+in vec4 c3;
+
 //Varying variables
 out vec4 ic;
 out vec4 l;
@@ -19,14 +23,15 @@ out vec4 n;
 out vec4 v;
 out vec2 iTexCoord0;
 void main(void) {
-    int normal_inside_coeff = 1; // -1 when skybox is textured to negate normals
-    if(negate == 1)
-        normal_inside_coeff *=-1;
-    l = normalize(V * lp - V * M * vertex ); //vector towards the light in eye space
-    v = normalize(vec4(0, 0, 0, 1) - V * M * vertex); //vector towards the viewer in eye space
-    n = normalize(V * M * normal* normal_inside_coeff); //normal vector in eye space
-
-    ic = color;
+    mat4 invTBN = mat4(c1,c2,c3,vec4(0,0,0,1));
+    
+	l = normalize(invTBN*(inverse(M) * lp - vertex)); //wektor do œwiat³a w przestrzeni oka
+    v = normalize(invTBN*(inverse(V*M)*vec4(0, 0, 0, 1) - vertex)); //wektor do obserwatora w przestrzeni oka
+    //n = normalize(V * M * normal); //wektor normalny w przestrzeni oka
     iTexCoord0 = texCoord;
-    gl_Position = P * V * M * vertex;
+    
+
+    //ic = color;
+    
+    gl_Position=P*V*M*vertex;
 }

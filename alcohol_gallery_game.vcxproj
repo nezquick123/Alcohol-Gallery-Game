@@ -52,6 +52,9 @@
     <Image Include="floor_text.png" />
     <Image Include="stone-wall.png" />
     <Image Include="wall_1.png" />
+    <Image Include="Wood_Panel_003_basecolor.png" />
+    <Image Include="Wood_Panel_003_height.png" />
+    <Image Include="Wood_Panel_003_normal.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

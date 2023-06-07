@@ -40,10 +40,24 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <iostream>
 #include <vector>
 #include <math.h>
+struct texturePack {
+	GLuint tex0; // Diffuse
+	GLuint tex1; // Normal
+	GLuint tex2; // Height
+};
+
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
-void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
-GLuint tex0;
+void textureCubeSpec(glm::mat4 M, texturePack textureWalls, glm::vec4 lp, bool inside = false);
+
+
+texturePack wallTextures;
+//Diffuse
+GLuint tex0; 
+//Normal
 GLuint tex1;
+//Height
+GLuint tex2;
+
 GLuint skytex;
 GLuint woodtex;
 GLuint orangeGlass;
@@ -67,6 +81,11 @@ float pitch = 0.0f;
 float lastX = 900.0f / 2.0;
 float lastY = 900.0f / 2.0;
 float fov = 45.0f;
+
+float* c1 = myCubeC1;
+float* c2 = myCubeC2;
+float* c3 = myCubeC3;
+
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	float xpos = static_cast<float>(xposIn);
@@ -302,6 +321,9 @@ public:
 		glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
 		glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 		glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+		glDisableVertexAttribArray(sp->a("c1"));  //Wyłącz przesyłanie danych do atrybutu normal
+		glDisableVertexAttribArray(sp->a("c2"));  //Wyłącz przesyłanie danych do atrybutu normal
+		glDisableVertexAttribArray(sp->a("c3"));  //Wyłącz przesyłanie danych do atrybutu normal
 	}
 };
 
@@ -322,7 +344,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	sp = new ShaderProgram("v_simplest.glsl", NULL, "f_simplest.glsl");
-	tex0 = readTexture("wall_1.png");
+	//tex0 = readTexture("wall_1.png");
 	tex1 = readTexture("floor_text.png");
 	skytex = readTexture("sky.png");
 	woodtex = readTexture("wood.png");
@@ -332,6 +354,10 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
+
+	wallTextures.tex0 = readTexture("Wood_Panel_003_basecolor.png"); 
+	wallTextures.tex1 = readTexture("Wood_Panel_003_normal.png");
+	wallTextures.tex2 = readTexture("Wood_Panel_003_height.png");
 	
 	//bottles
 	for (int i = 0; i < 10; i++) {
@@ -371,7 +397,7 @@ public:
 		floorH = fh;
 	}
 
-	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, GLuint texSpec, bool reflected, float rotateAngle = 0) {
+	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, texturePack wallTextures, bool reflected, float rotateAngle = 0) {
 		float drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
 		float scalx = 1.0f, scalz = 1.0f;
 		if (drunk_coef != 0.0f) {
@@ -389,10 +415,10 @@ public:
 		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x  + drunkfun , floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
 		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
-		textureCubeSpec(Mp, tex, texSpec, lpmain);
+		textureCubeSpec(Mp, wallTextures, lpmain);
 	}
 
-	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, GLuint texSpec, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
+	void drawWall(bool rotated, glm::mat4 M, float var, texturePack wallTextures, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
 
 		glm::vec3 plateCoords;
 		int min, max;
@@ -405,14 +431,14 @@ public:
 				for (float i = -range, j = 0; i < range; i += 2 * plateScal.z, j++) {
 					if (wt == DOOR) {
 						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
+							drawPlate(M, glm::vec3(var, h, i), plateScal, wallTextures, reflected, 90);
 					}
 					else if (wt == WINDOWS) {
 						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
-							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
+							drawPlate(M, glm::vec3(var, h, i), plateScal, wallTextures, reflected, 90);
 					}
 					else
-						drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
+						drawPlate(M, glm::vec3(var, h, i), plateScal, wallTextures, reflected, 90);
 				}
 			}
 		}
@@ -421,14 +447,14 @@ public:
 				for (float i = -range, j = 0; i < range; i += 2 * plateScal.x, j++) {
 					if (wt == DOOR) {
 						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
+							drawPlate(M, glm::vec3(i, h, var), plateScal, wallTextures, reflected);
 					}
 					else if (wt == WINDOWS) {
 						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
-							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
+							drawPlate(M, glm::vec3(i, h, var), plateScal, wallTextures, reflected);
 					}
 					else 
-						drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
+						drawPlate(M, glm::vec3(i, h, var), plateScal, wallTextures, reflected);
 				}
 
 			}
@@ -463,10 +489,10 @@ public:
 			}
 			Ms = glm::translate(Ms, glm::vec3((float)roomCoord, 0.0f, offset));
 			Room wall(height, floorScaleVec.y);
-			wall.drawWall(0, Ms, floorScaleVec.x, tex0, texSpecWall, plateScalNotRot, floorScaleVec.x, rotFlag, DOOR);
-			wall.drawWall(0, Ms, -floorScaleVec.x, tex0, texSpecWall, plateScalNotRot, floorScaleVec.x, rotFlag, WINDOWS);
-			wall.drawWall(1, Ms, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, rotFlag);
-			wall.drawWall(1, Ms, -floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, rotFlag);
+			wall.drawWall(0, Ms, floorScaleVec.x, wallTextures, plateScalNotRot, floorScaleVec.x, rotFlag, DOOR);
+			wall.drawWall(0, Ms, -floorScaleVec.x, wallTextures, plateScalNotRot, floorScaleVec.x, rotFlag, WINDOWS);
+			wall.drawWall(1, Ms, floorScaleVec.z, wallTextures, plateScalRot, floorScaleVec.z, rotFlag);
+			wall.drawWall(1, Ms, -floorScaleVec.z, wallTextures, plateScalRot, floorScaleVec.z, rotFlag);
 
 			//floor
 			for (int i = 0; i < 2; i++) {
@@ -481,10 +507,10 @@ public:
 				Mc = glm::translate(Mc, glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				if (rn == 0) {
 					glm::mat4 Mw = glm::translate(Mc, glm::vec3(-20.0f, 0.0f, 0.0f));
-					wall.drawWall(1, Mw, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, DOOR);
+					wall.drawWall(1, Mw, floorScaleVec.z, wallTextures, plateScalRot, floorScaleVec.z, !rotFlag, DOOR);
 				}
 				if (rn == roomNum-1) {
-					wall.drawWall(1, Mc, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, WINDOWS);
+					wall.drawWall(1, Mc, floorScaleVec.z, wallTextures, plateScalRot, floorScaleVec.z, !rotFlag, WINDOWS);
 				}
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
@@ -586,7 +612,7 @@ void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside) {
 }
 Floor f;
 
-void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside) {
+void textureCubeSpec(glm::mat4 M, texturePack wallTextures, glm::vec4 lp, bool inside) {
 	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
 	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
 	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
@@ -603,11 +629,15 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, myCubeTexCoords); //Specify source of the data for the attribute normal
 	glUniform1i(sp->u("textureMap0"), 6);
 	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, tex);
+	glBindTexture(GL_TEXTURE_2D, wallTextures.tex0);
 
 	glUniform1i(sp->u("textureMap1"), 7);
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, texSpec);
+	glBindTexture(GL_TEXTURE_2D, wallTextures.tex1);
+
+	glUniform1i(sp->u("textureMap2"), 8);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, wallTextures.tex2);
 
 
 
@@ -618,6 +648,15 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
 	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+	glEnableVertexAttribArray(sp->a("c1"));  //Włącz przesyłanie danych do atrybutu normal
+	glVertexAttribPointer(sp->a("c1"), 4, GL_FLOAT, false, 0, c1); //Wskaż tablicę z danymi dla atrybutu normal
+
+	glEnableVertexAttribArray(sp->a("c2"));  //Włącz przesyłanie danych do atrybutu normal
+	glVertexAttribPointer(sp->a("c2"), 4, GL_FLOAT, false, 0, c2); //Wskaż tablicę z danymi dla atrybutu normal
+
+	glEnableVertexAttribArray(sp->a("c3"));  //Włącz przesyłanie danych do atrybutu normal
+	glVertexAttribPointer(sp->a("c3"), 4, GL_FLOAT, false, 0, c3); //Wskaż tablicę z danymi dla atrybutu normal
+
 }
 
 //Drawing procedure
