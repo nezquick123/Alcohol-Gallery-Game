@@ -42,6 +42,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <math.h>
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
+void drinkingAnimation();
 GLuint tex0;
 GLuint tex1;
 GLuint skytex;
@@ -67,6 +68,8 @@ float pitch = 0.0f;
 float lastX = 900.0f / 2.0;
 float lastY = 900.0f / 2.0;
 float fov = 45.0f;
+
+bool drinkUp = false;
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	float xpos = static_cast<float>(xposIn);
@@ -148,7 +151,7 @@ void key_callback(GLFWwindow* window, int key,
 		if (key == GLFW_KEY_A) moveSpeedz = -0.8f;
 		if (key == GLFW_KEY_D) moveSpeedz = 0.8f;
 		if (key == GLFW_KEY_ESCAPE) close = true;
-		
+		if (key == GLFW_KEY_E) drinkUp = true;
 	}
 
 	if (action == GLFW_RELEASE) {
@@ -621,7 +624,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 }
 
 //Drawing procedure
-void drawScene(GLFWwindow* window) {
+void drawScene(GLFWwindow* window, float lookupAngle) {
 	//************Place any code here that draws something inside the window******************l
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear color and depth buffers
 	tempCam = cameraPos;
@@ -670,9 +673,10 @@ void drawScene(GLFWwindow* window) {
 		cameraPos.z = tempCam.z;
 		//std::cout << "2" << std::endl;
 	}
-	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z);
+	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z); // ????
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 150.0f); //Compute projection matrix
-	glm::mat4 V = glm::lookAt(cameraPos, cameraPos + cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
+	glm::mat4 V = glm::lookAt(cameraPos, cameraPos + cameraFront + glm::vec3(0.0f, lookupAngle, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
+	//V = glm::rotate(V, 20.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	
 	sp->use();//activate shading program
@@ -743,13 +747,28 @@ int main(void)
 	initOpenGLProgram(window); //Call initialization procedure
 
 	//Main application loop
-
+	
+	float startAngle = 0.0f;
 	glfwSetTime(0); //clear internal timer
 	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
 		sinarg += glfwGetTime();
 		glfwSetTime(0); //clear internal timer
-		drawScene(window); //Execute drawing procedure
+		startAngle = 0.0f;
+		drawScene(window, 0.0f); //Execute drawing procedure
+		if (drinkUp) {
+			/*glm::mat4 V = glm::lookAt(cameraPos, glm::vec3(cameraPos.x, 0.0f, cameraPos.z) + glm::vec3(cameraFront.x, 0.0f, cameraFront.z), glm::vec3(0.0f, 1.0f, 0.0f));
+			glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
+			glfwSwapBuffers(window);*/
+			moveSpeedx = 0;
+			moveSpeedz = 0;
+			double timeToStop = glfwGetTime() + 1.0f;
+			while (glfwGetTime() < timeToStop) {
+				drawScene(window, startAngle);
+				startAngle += 0.02f;
+			}
+			drinkUp = false;
+		}
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
 	freeOpenGLProgram(window);
