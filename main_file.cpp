@@ -757,9 +757,6 @@ int main(void)
 		startAngle = 0.0f;
 		drawScene(window, 0.0f); //Execute drawing procedure
 		if (drinkUp) {
-			/*glm::mat4 V = glm::lookAt(cameraPos, glm::vec3(cameraPos.x, 0.0f, cameraPos.z) + glm::vec3(cameraFront.x, 0.0f, cameraFront.z), glm::vec3(0.0f, 1.0f, 0.0f));
-			glUniformMatrix4fv(sp->u("V"), 1, false, glm::value_ptr(V));
-			glfwSwapBuffers(window);*/
 			moveSpeedx = 0;
 			moveSpeedz = 0;
 			double timeToStop = glfwGetTime() + 1.0f;
