@@ -40,6 +40,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <SDL.h>
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
 GLuint tex0;
