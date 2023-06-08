@@ -43,6 +43,9 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <GL/gl.h>
 #include <GL/GLU.h>
 #include <windows.h>
+#include <al.h>
+#include <alc.h>
+
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
 void drinkingAnimation();
@@ -787,6 +790,11 @@ int main(void)
 	
 	float startAngle = 0.0f;
 	glfwSetTime(0); //clear internal timer
+	ALCdevice* device = alcOpenDevice(nullptr);
+	if (!device) {
+		std::cerr << "Failed to open OpenAL device." << std::endl;
+		return 1;
+	}
 	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
 		sinarg += glfwGetTime();
