@@ -22,6 +22,7 @@
     <ClInclude Include="allmodels.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="cube.h" />
+    <ClInclude Include="hud.h" />
     <ClInclude Include="lodepng.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="myCube.h" />
