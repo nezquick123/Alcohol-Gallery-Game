@@ -191,6 +191,7 @@ void key_callback(GLFWwindow* window, int key,
 	if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_S || key == GLFW_KEY_W) moveSpeedx = 0;
 		if (key == GLFW_KEY_A || key == GLFW_KEY_D) moveSpeedz = 0;
+		if (key == GLFW_KEY_E) drinkUp = false;
 	}
 }
 
@@ -349,7 +350,13 @@ CustomModel bottle;
 std::vector <CustomModel> bottleModels;//vector with bottles with diffrent models
 std::vector <CustomModel> collidingModels;
 std::vector <glm::vec3> bottlePositions;
+std::vector <int> bottlesStillStanding;
 //glm::vec3 bottlePositions[10];
+
+bool bottleExists(int id, std::vector<int> bottlePositions) {
+	auto it = std::find(bottlePositions.begin(), bottlePositions.end(), id);
+	return it != bottlePositions.end();
+}
 
 //Initialization code procedure
 void initOpenGLProgram(GLFWwindow* window) {
@@ -384,6 +391,9 @@ void initOpenGLProgram(GLFWwindow* window) {
 	printf("Namessize: %d BottleSize %d", bottleNames.size(), bottleModels.size());
 	//Colliding models
 	//glm::vec3 positions[10];
+	for (int i = 0; i < 10; i++) {
+		bottlesStillStanding.push_back(i);
+	}
 	for (int i = 0; i < 5; i++) {
 		//bottlePositions[i] = glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f);
 		bottlePositions.push_back(glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f));
@@ -814,8 +824,8 @@ int main(void)
 		startAngle = 0.0f;
 		drawScene(window, 0.0f); //Execute drawing procedure
 		int nearestBottleId = nearestBottle(bottlePositions);
-		if (drinkUp && nearestBottleId != -1) {
-			//bottlePositions.erase(bottlePositions.begin() + nearestBottleId);
+		if (drinkUp && nearestBottleId != -1 && bottleExists(nearestBottleId, bottlesStillStanding)) {
+			bottlesStillStanding.erase(std::remove(bottlesStillStanding.begin(), bottlesStillStanding.end(), nearestBottleId), bottlesStillStanding.end());
 			moveSpeedx = 0;
 			moveSpeedz = 0;
 			double timeToStop = glfwGetTime() + 1.0f;
@@ -825,9 +835,7 @@ int main(void)
 			}
 			drinkUp = false;
 		}
-		std::cout << "POG";
 		std::cout << nearestBottle(bottlePositions) << std::endl;
-		std::cout << "POG2";
 		//drawHUD();
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
