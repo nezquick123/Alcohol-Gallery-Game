@@ -786,8 +786,12 @@ int main(void)
 	initOpenGLProgram(window); //Call initialization procedure
 
 	//SFML
-	sf::SoundBuffer buffer1, buffer2;
-	if (!buffer1.loadFromFile("entertainer.wav") || !buffer2.loadFromFile("drink.wav")) {
+	sf::SoundBuffer buffer1, buffer2, buffer3, buffer4, buffer5;
+	if (!buffer1.loadFromFile("entertainer.wav") 
+		|| !buffer2.loadFromFile("drink.wav")
+		|| !buffer3.loadFromFile("entertainer125.wav")
+		|| !buffer4.loadFromFile("entertainer150.wav")
+		|| !buffer5.loadFromFile("entertainer175.wav")) {
 		return 1; // Error loading sound files
 	}
 
@@ -796,18 +800,26 @@ int main(void)
 	drinkingSound.setBuffer(buffer2);
 
 	backgroundMusic.play();
-	backgroundMusic.setVolume(30);
 
 	//Main application loop
 
+	float drunkIncrement = 0.2f;
+	byte drunkLevel = 0;
+	float music125toggleTime = 0;
+	float music150toggleTime = 0;
 	
 	float startAngle = 0.0f;
 	float musicPitch = 1;
+	float musicVolume = 20;
+	backgroundMusic.setVolume(musicVolume);
+	sf::Time startOffset;
 	glfwSetTime(0); //clear internal timer
 	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
-		sinarg += glfwGetTime();
-		glfwSetTime(0); //clear internal timer
+		sinarg = glfwGetTime();
+		
+		std::cout << sinarg << std::endl;
+		//glfwSetTime(0); //clear internal timer
 		startAngle = 0.0f;
 		drawScene(window, 0.0f); //Execute drawing procedure
 		int nearestBottleId = nearestBottle(bottlePositions);
@@ -822,9 +834,32 @@ int main(void)
 				startAngle += 0.02f;
 			}
 			drinkUp = false;
-			drunk_coef += 0.2f;
-			musicPitch += 0.05;
-			backgroundMusic.setPitch(musicPitch);
+			drunkLevel += 1;
+			drunk_coef = drunkIncrement * drunkLevel;
+			if (drunkLevel == 3) {
+				backgroundMusic.setBuffer(buffer3);
+				startOffset = sf::seconds(glfwGetTime() * 100.0 / 125.0);
+				music125toggleTime = glfwGetTime();
+				//glfwSetTime(glfwGetTime() * 100.0 / 125.0);
+				backgroundMusic.setPlayingOffset(startOffset);
+				backgroundMusic.play();
+			}
+			if (drunkLevel == 4) {
+				backgroundMusic.setBuffer(buffer4);
+				float normalSongTime = music125toggleTime + (glfwGetTime() - music125toggleTime) * 125 / 100;
+				startOffset = sf::seconds(normalSongTime * 100.0 / 150.0);
+				music150toggleTime = glfwGetTime();
+				backgroundMusic.setPlayingOffset(startOffset);
+				backgroundMusic.play();
+			}
+			if (drunkLevel == 9) {
+				backgroundMusic.setBuffer(buffer5);
+				float normalSongTime = music125toggleTime  + (music150toggleTime - music125toggleTime) * 125 / 100 + (glfwGetTime() - music150toggleTime) * 150 / 100;
+				startOffset = sf::seconds(normalSongTime * 100.0 / 175.0);
+				backgroundMusic.setPlayingOffset(startOffset);
+				backgroundMusic.play();
+			}
+			
 		}
 		std::cout << nearestBottle(bottlePositions) << std::endl;
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
