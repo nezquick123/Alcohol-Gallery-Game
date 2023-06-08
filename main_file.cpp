@@ -40,13 +40,18 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <GL/gl.h>
+#include <GL/GLU.h>
+#include <windows.h>
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
+void drinkingAnimation();
 GLuint tex0;
 GLuint tex1;
 GLuint skytex;
 GLuint woodtex;
 GLuint orangeGlass;
+
 
 GLuint texSpecWall;
 GLuint texSpecFloor;
@@ -67,6 +72,8 @@ float pitch = 0.0f;
 float lastX = 900.0f / 2.0;
 float lastY = 900.0f / 2.0;
 float fov = 45.0f;
+
+bool drinkUp = false;
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	float xpos = static_cast<float>(xposIn);
@@ -148,12 +155,13 @@ void key_callback(GLFWwindow* window, int key,
 		if (key == GLFW_KEY_A) moveSpeedz = -0.8f;
 		if (key == GLFW_KEY_D) moveSpeedz = 0.8f;
 		if (key == GLFW_KEY_ESCAPE) close = true;
-		
+		if (key == GLFW_KEY_E) drinkUp = true;
 	}
 
 	if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_S || key == GLFW_KEY_W) moveSpeedx = 0;
 		if (key == GLFW_KEY_A || key == GLFW_KEY_D) moveSpeedz = 0;
+		if (key == GLFW_KEY_E) drinkUp = false;
 	}
 }
 
@@ -311,6 +319,15 @@ CustomModel table;
 CustomModel bottle;
 std::vector <CustomModel> bottleModels;//vector with bottles with diffrent models
 std::vector <CustomModel> collidingModels;
+std::vector <glm::vec3> bottlePositions;
+std::vector <int> bottlesStillStanding;
+//glm::vec3 bottlePositions[10];
+
+bool bottleExists(int id, std::vector<int> bottlePositions) {
+	auto it = std::find(bottlePositions.begin(), bottlePositions.end(), id);
+	return it != bottlePositions.end();
+}
+
 //Initialization code procedure
 void initOpenGLProgram(GLFWwindow* window) {
 	initShaders();
@@ -341,19 +358,40 @@ void initOpenGLProgram(GLFWwindow* window) {
 	}
 	printf("Namessize: %d BottleSize %d", bottleNames.size(), bottleModels.size());
 	//Colliding models
-	glm::vec3 positions[10];
+	//glm::vec3 positions[10];
+	for (int i = 0; i < 10; i++) {
+		bottlesStillStanding.push_back(i);
+	}
 	for (int i = 0; i < 5; i++) {
-		positions[i] = glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f);
+		//bottlePositions[i] = glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f);
+		bottlePositions.push_back(glm::vec3(i * 20.0f - 50.0f, 1.0f, 21.0f));
 	}
 	for (int i = 5; i < 10; i++) {
-		positions[i] = glm::vec3((i-5) * 20.0f - 50.0f, 1.0f, -21.0f);
+		//bottlePositions[i] = glm::vec3((i-5) * 20.0f - 50.0f, 1.0f, -21.0f);
+		bottlePositions.push_back(glm::vec3((i - 5) * 20.0f - 50.0f, 1.0f, -21.0f));
 	}
 	for (int i = 0; i < 10; i++) {
 		table.size = glm::vec2(2.0f, 2.0f);
-		table.pos = positions[i];
+		table.pos = bottlePositions.at(i);
 		table.collider = Collider(glm::vec4(table.pos.x - table.size.x, table.pos.z - table.size.y, table.pos.x + table.size.x, table.pos.z + table.size.y));
 		collidingModels.push_back(table);
 	}
+}
+
+float distanceBetweenTwoPoints(float xa, float za, float xb, float zb) {
+	return sqrt(pow(xb - xa, 2) + pow(zb - za, 2));
+}
+
+int nearestBottle(std::vector<glm::vec3>& positions) {
+	float radius = 10.0f;
+	glm::vec3 currentBottlePosition;
+	for (int i = 0; i < positions.size(); i++) {
+		currentBottlePosition = positions[i];
+		if (distanceBetweenTwoPoints(cameraPos.x, cameraPos.z, currentBottlePosition.x, currentBottlePosition.z) <= radius) {
+			return i;
+		}
+	}
+	return -1;
 }
 
 
@@ -621,7 +659,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 }
 
 //Drawing procedure
-void drawScene(GLFWwindow* window) {
+void drawScene(GLFWwindow* window, float lookupAngle) {
 	//************Place any code here that draws something inside the window******************l
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Clear color and depth buffers
 	tempCam = cameraPos;
@@ -670,9 +708,10 @@ void drawScene(GLFWwindow* window) {
 		cameraPos.z = tempCam.z;
 		//std::cout << "2" << std::endl;
 	}
-	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z);
+	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z); // ????
 	glm::mat4 P = glm::perspective(glm::radians(50.0f), 1.0f, 1.0f, 150.0f); //Compute projection matrix
-	glm::mat4 V = glm::lookAt(cameraPos, cameraPos + cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
+	glm::mat4 V = glm::lookAt(cameraPos, cameraPos + cameraFront + glm::vec3(0.0f, lookupAngle, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
+	//V = glm::rotate(V, 20.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 
 	
 	sp->use();//activate shading program
@@ -689,11 +728,12 @@ void drawScene(GLFWwindow* window) {
 
 	glm::mat4 M = glm::mat4(1.0f);
 	for (int i = 0; i < collidingModels.size(); i++) {
+		
 		//tables drawing
 		M = glm::mat4(1.0f);
 		M = glm::translate(M, glm::vec3(collidingModels.at(i).pos.x - 1.0f, collidingModels.at(i).pos.y, collidingModels.at(i).pos.z - 1.0f));
 		collidingModels.at(i).draw(M, woodtex, lpmain);
-
+		if (!bottleExists(i, bottlesStillStanding)) continue;
 		
 		//bottles drawing
 		M = glm::translate(M, glm::vec3(1.0f, 1.7f, 1.0f));
@@ -741,15 +781,30 @@ int main(void)
 	}
 
 	initOpenGLProgram(window); //Call initialization procedure
-
 	//Main application loop
-
+	
+	float startAngle = 0.0f;
 	glfwSetTime(0); //clear internal timer
 	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
 		sinarg += glfwGetTime();
 		glfwSetTime(0); //clear internal timer
-		drawScene(window); //Execute drawing procedure
+		startAngle = 0.0f;
+		drawScene(window, 0.0f); //Execute drawing procedure
+		int nearestBottleId = nearestBottle(bottlePositions);
+		if (drinkUp && nearestBottleId != -1 && bottleExists(nearestBottleId, bottlesStillStanding)) {
+			bottlesStillStanding.erase(std::remove(bottlesStillStanding.begin(), bottlesStillStanding.end(), nearestBottleId), bottlesStillStanding.end());
+			moveSpeedx = 0;
+			moveSpeedz = 0;
+			double timeToStop = glfwGetTime() + 1.2f;
+			PlaySound(TEXT("drink.wav"), NULL, SND_ASYNC);
+			while (glfwGetTime() < timeToStop) {
+				drawScene(window, startAngle);
+				startAngle += 0.02f;
+			}
+			drinkUp = false;
+		}
+		std::cout << nearestBottle(bottlePositions) << std::endl;
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
 	freeOpenGLProgram(window);
