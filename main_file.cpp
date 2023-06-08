@@ -42,6 +42,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <math.h>
 #include <GL/gl.h>
 #include <GL/GLU.h>
+#include <windows.h>
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
 void drinkingAnimation();
@@ -780,7 +781,6 @@ int main(void)
 	}
 
 	initOpenGLProgram(window); //Call initialization procedure
-
 	//Main application loop
 	
 	float startAngle = 0.0f;
@@ -796,7 +796,8 @@ int main(void)
 			bottlesStillStanding.erase(std::remove(bottlesStillStanding.begin(), bottlesStillStanding.end(), nearestBottleId), bottlesStillStanding.end());
 			moveSpeedx = 0;
 			moveSpeedz = 0;
-			double timeToStop = glfwGetTime() + 1.0f;
+			double timeToStop = glfwGetTime() + 1.2f;
+			PlaySound(TEXT("drink.wav"), NULL, SND_ASYNC);
 			while (glfwGetTime() < timeToStop) {
 				drawScene(window, startAngle);
 				startAngle += 0.02f;
