@@ -348,8 +348,6 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
-
-	hudTex = readTexture("floor_tex.png");
 	
 	//bottles
 	for (int i = 0; i < 10; i++) {
@@ -729,11 +727,12 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 
 	glm::mat4 M = glm::mat4(1.0f);
 	for (int i = 0; i < collidingModels.size(); i++) {
+		
 		//tables drawing
 		M = glm::mat4(1.0f);
 		M = glm::translate(M, glm::vec3(collidingModels.at(i).pos.x - 1.0f, collidingModels.at(i).pos.y, collidingModels.at(i).pos.z - 1.0f));
 		collidingModels.at(i).draw(M, woodtex, lpmain);
-
+		if (!bottleExists(i, bottlesStillStanding)) continue;
 		
 		//bottles drawing
 		M = glm::translate(M, glm::vec3(1.0f, 1.7f, 1.0f));
