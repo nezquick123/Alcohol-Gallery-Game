@@ -110,37 +110,6 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 	cameraFront = glm::normalize(front);
 }
 
-GLuint hudTex;
-
-//void HUD() {
-//	//hudTex = readTexture("floor_tex.png");
-//	glBindTexture(GL_TEXTURE_2D, hudTex);
-//	glColor3f(1.0, 1.0, 1.0);
-//	glBegin(GL_QUADS);
-//	glTexCoord2f(0.0, 1.0); glVertex2f(0.05, 0.05);
-//	glTexCoord2f(1.0, 1.0); glVertex2f(0.3, 0.05);
-//	glTexCoord2f(1.0, 0.0); glVertex2f(0.3, 0.15);
-//	glTexCoord2f(0.0, 0.0); glVertex2f(0.05, 0.15);
-//	glEnd();
-//}
-
-//void drawHUD() {
-//	glm::mat4 projection = glm::ortho(0.0f, 1.0f, 1.0f, 0.0f);
-//	glm::mat4 modelView = glm::mat4(1.0f);
-//
-//	glMatrixMode(GL_PROJECTION);
-//	glLoadMatrixf(glm::value_ptr(projection));
-//	glMatrixMode(GL_MODELVIEW);
-//	glLoadMatrixf(glm::value_ptr(modelView));
-//
-//	HUD();
-//
-//	glMatrixMode(GL_PROJECTION);
-//	glPopMatrix();
-//	glMatrixMode(GL_MODELVIEW);
-//	glPopMatrix();
-//}
-
 GLuint readTexture(const char* filename) { //global declaration
 	GLuint tex;
 	glActiveTexture(GL_TEXTURE0);
@@ -836,7 +805,6 @@ int main(void)
 			drinkUp = false;
 		}
 		std::cout << nearestBottle(bottlePositions) << std::endl;
-		//drawHUD();
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
 	freeOpenGLProgram(window);
