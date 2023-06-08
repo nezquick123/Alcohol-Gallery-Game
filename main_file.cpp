@@ -709,9 +709,9 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 		//std::cout << "2" << std::endl;
 	}
 	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z); // ????
-	glm::mat4 P = glm::perspective(glm::radians(50.0f + sin(sinarg)*drunk_coef*10), 1.0f, 1.0f, 150.0f); //Compute projection matrix
+	glm::mat4 P = glm::perspective(glm::radians(50.0f + sin(sinarg * 2 * drunk_coef)*drunk_coef*20), 1.0f, 1.0f, 150.0f); //Compute projection matrix
 	glm::mat4 V = glm::lookAt(cameraPos,
-		cameraPos + cameraFront + glm::vec3(0.0f + sin(sinarg* 2*drunk_coef) * drunk_coef * 1/2, lookupAngle + sin(sinarg * 2 * drunk_coef) * drunk_coef * 1/2, 0.0f + cos(sinarg * 2 * drunk_coef) * drunk_coef * 1/2),
+		cameraPos + cameraFront + glm::vec3(0.0f + sin(sinarg* 2*drunk_coef) * drunk_coef * 1/2, lookupAngle + cos(sinarg * 2 * drunk_coef) * drunk_coef * 1/2, 0.0f + sin(sinarg * 2 * drunk_coef) * drunk_coef * 1/2),
 		glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
 	//V = glm::rotate(V, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
