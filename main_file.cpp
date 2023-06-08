@@ -43,6 +43,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <GL/gl.h>
 #include <GL/GLU.h>
 #include <windows.h>
+#include <SFML/Audio.hpp>
 void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
 void drinkingAnimation();
@@ -783,9 +784,25 @@ int main(void)
 	}
 
 	initOpenGLProgram(window); //Call initialization procedure
+
+	//SFML
+	sf::SoundBuffer buffer1, buffer2;
+	if (!buffer1.loadFromFile("entertainer.wav") || !buffer2.loadFromFile("drink.wav")) {
+		return 1; // Error loading sound files
+	}
+
+	sf::Sound backgroundMusic, drinkingSound;
+	backgroundMusic.setBuffer(buffer1);
+	drinkingSound.setBuffer(buffer2);
+
+	backgroundMusic.play();
+	backgroundMusic.setVolume(30);
+
 	//Main application loop
+
 	
 	float startAngle = 0.0f;
+	float musicPitch = 1;
 	glfwSetTime(0); //clear internal timer
 	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
@@ -799,13 +816,15 @@ int main(void)
 			moveSpeedx = 0;
 			moveSpeedz = 0;
 			double timeToStop = glfwGetTime() + 1.2f;
-			PlaySound(TEXT("drink.wav"), NULL, SND_ASYNC);
+			drinkingSound.play();
 			while (glfwGetTime() < timeToStop) {
 				drawScene(window, startAngle);
 				startAngle += 0.02f;
 			}
 			drinkUp = false;
 			drunk_coef += 0.2f;
+			musicPitch += 0.05;
+			backgroundMusic.setPitch(musicPitch);
 		}
 		std::cout << nearestBottle(bottlePositions) << std::endl;
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
