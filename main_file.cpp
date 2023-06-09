@@ -844,7 +844,7 @@ int main(void)
 				backgroundMusic.setPlayingOffset(startOffset);
 				backgroundMusic.play();
 			}
-			if (drunkLevel == 4) {
+			if (drunkLevel == 6) {
 				backgroundMusic.setBuffer(buffer4);
 				float normalSongTime = music125toggleTime + (glfwGetTime() - music125toggleTime) * 125 / 100;
 				startOffset = sf::seconds(normalSongTime * 100.0 / 150.0);
