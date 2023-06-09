@@ -311,12 +311,47 @@ public:
 		glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 		glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
 	}
+	void draw(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp) {//TODO: verts norms and texcoords to add for multiple models
+		glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
+		glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
+		glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
+
+		//glUniform1i(sp->u("negate"), inside);
+		glEnableVertexAttribArray(sp->a("color")); //Enable sending data to the attribute color
+		glVertexAttribPointer(sp->a("color"), 4, GL_FLOAT, false, 0, colors); //Specify source of the data for the attribute color
+		glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
+		glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
+		glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, normals); //Specify source of the data for the attribute normal
+
+
+		glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
+		glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, myCubeTexCoords); //Specify source of the data for the attribute normal
+		glUniform1i(sp->u("textureMap0"), 6);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, tex);
+
+		glUniform1i(sp->u("textureMap1"), 7);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, texSpec);
+
+
+
+		/// //////////////////////////////////////
+
+		glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
+		glDisableVertexAttribArray(sp->a("texCoord"));
+		glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
+		glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
+		glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+	}
 };
 
 std::vector<std::string> bottleNames = {"models/Carafe_with_stopper.obj", "models/mybottle1.obj", "models/mybottle2.obj", "models/mybottle3.obj" };
 //jack working but too many meshes
 CustomModel table;
 CustomModel bottle;
+CustomModel windows;
+CustomModel door;
 std::vector <CustomModel> bottleModels;//vector with bottles with diffrent models
 std::vector <CustomModel> collidingModels;
 std::vector <glm::vec3> bottlePositions;
@@ -333,7 +368,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	initShaders();
 	srand(time(0));
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	//************Place any code here that needs to be executed once, at the program start************
+	//************Place any code here that needs to be executed once, at the program start************zz
 	glClearColor(0, 0, 0, 1); //Set color buffer clear color
 	glEnable(GL_DEPTH_TEST); //Turn on pixel depth test based on depth buffer
 	glfwSetKeyCallback(window, key_callback);
@@ -349,7 +384,9 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
-	
+	//walls
+	door.loadTexture("models/door.obj");
+	windows.loadTexture("models/win2.obj");
 	//bottles
 	for (int i = 0; i < 10; i++) {
 		int selectModel = rand() % bottleNames.size();
@@ -398,7 +435,9 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-float drunk_coef = 0.0f; //test conflict
+float drunk_coef = 1.0f; //test conflict
+
+std::vector <Collider> wallCollider;
 
 class Room {
 	int height;
@@ -409,68 +448,166 @@ public:
 		floorH = fh;
 	}
 
-	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, GLuint texSpec, bool reflected, float rotateAngle = 0) {
-		float drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
-		float scalx = 1.0f, scalz = 1.0f;
-		if (drunk_coef != 0.0f) {
-
-			if (reflected) {
-				drunkfun *= -1;
+	void drawWall(bool rotated, glm::mat4 Mb, float offset, GLuint tex, GLuint texSpec, bool reflected, wallType wt = BASIC) {
+		float correction =10.0f;
+		if (reflected)
+			correction *= -1;
+		float drunkfun = drunk_coef * sin(drunk_coef * 2 * sinarg) + 1.5 * drunk_coef;
+		//glm::mat4 Mp = Mb;
+		if (rotated) {//z axis
+			glm::mat4 Mp = glm::translate(Mb, glm::vec3(offset, 5.0f, 0.0f));
+			if (wt == BASIC) {
+				Mp = glm::scale(Mp, glm::vec3(0.125f+abs(drunkfun), 5.0f, 10.0f));
+				textureCubeSpec(Mp, tex, texSpec, lpmain);
+				//add collider
+				glm::vec4 p1, p2;
+				Mp = glm::scale(Mp, glm::vec3(12.0f, 1.0f, 1.1f));
+				p1 = Mp * glm::vec4(0, 0, 0, 1);
+				p2 = Mp * glm::vec4(2, 0, 2, 1);
+				if(!reflected)
+				wallCollider.push_back(Collider(glm::vec4(p1.x-1.5f, p1.z - correction , p2.x, p2.z - correction )));
+				else 
+					wallCollider.push_back(Collider(glm::vec4(p1.x + 1.5f, p1.z - correction, p2.x, p2.z - correction)));
+			}
+			if (wt == WINDOWS) {
+				drawWindows(Mp, tex, texSpec, 1);
+				glm::vec4 p1, p2;
+				Mp = glm::scale(Mp, glm::vec3(1.0f, 5.0f, 10.0f));
+				p1 = Mp * glm::vec4(-2, 0, -2, 1);
+				p2 = Mp * glm::vec4(2, 0, 2, 1);
+				wallCollider.push_back(Collider(glm::vec4(p1.x, p1.z, p2.x, p2.z)));
 
 			}
-			if (rotateAngle != 0) {
-				scalx = abs(drunkfun) * 5;
+			if (wt == DOOR) {
+				drawDoor(Mp, tex, texSpec, 1);
+				glm::vec4 p1, p2;
+				Mp = glm::scale(Mp, glm::vec3(1.0f, 5.0f, 10.0f));
+				p1 = Mp * glm::vec4(0, 0, 0, 1);
+				p2 = Mp * glm::vec4(2, 0, 2, 1);
+				wallCollider.push_back(Collider(glm::vec4(p1.x, p1.z - correction, p2.x, p2.z - correction)));
 			}
-			else
-				scalz = abs(drunkfun) * 5;
 		}
-		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x  + drunkfun , floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
-		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
-		textureCubeSpec(Mp, tex, texSpec, lpmain);
+		else {// x axis
+			glm::mat4 Mp = glm::translate(Mb, glm::vec3(0.0f, 5.0f, offset));
+			if (wt == BASIC) {//not used anywhere
+				Mp = glm::scale(Mp, glm::vec3(10.0f, 5.0f, 0.125f));
+				textureCubeSpec(Mp, tex, texSpec, lpmain);
+				glm::vec4 p1, p2;
+				Mp = glm::scale(Mp, glm::vec3(1.0f, 1.0f, 10.0f));;
+				p1 = Mp * glm::vec4(0, 0, 0, 1);
+				p2 = Mp * glm::vec4(2, 0, 2, 1);
+				wallCollider.push_back(Collider(glm::vec4(p1.x, p1.z - correction, p2.x, p2.z - correction)));
+			}
+			if (wt == WINDOWS) {
+				//windows.draw(Mp, tex, lpmain);
+				drawWindows(Mp, tex, texSpec, 0);
+				glm::vec4 p1, p2;
+				Mp = glm::scale(Mp, glm::vec3(10.0f, 5.0f, 1.0f));
+				p1 = Mp * glm::vec4(-2, 0, -2, 1);
+				p2 = Mp * glm::vec4(2, 0, 2, 1);
+				wallCollider.push_back(Collider(glm::vec4(p1.x, p1.z , p2.x, p2.z)));
+			}
+			if (wt == DOOR) {
+				drawDoor(Mp, tex, texSpec, 0);
+				glm::vec4 p1, p2;
+				glm::mat4 Mp1 = glm::translate(Mp, glm::vec3(-7.0f, 0.0f, 0.0f));
+				Mp1 = glm::scale(Mp1, glm::vec3(3.0f, 5.0f, 0.5f));
+				p1 = Mp1 * glm::vec4(0, 0, 0, 1);
+				p2 = Mp1 * glm::vec4(2, 0, 2, 1);
+				if(reflected)
+				wallCollider.push_back(Collider(glm::vec4(p1.x , p1.z, p2.x + 2.0f, p2.z)));
+				else
+					wallCollider.push_back(Collider(glm::vec4(p1.x , p1.z, p2.x - 2.0f, p2.z)));
+				//Mp1 = Mp;
+				Mp1 = glm::translate(Mp, glm::vec3(6.0f, 0.0f, 0.0f));
+				Mp1 = glm::scale(Mp1, glm::vec3(4.0f, 5.0f, 0.5f));
+				p1 = Mp1 * glm::vec4(0, 0, 0, 1);
+				p2 = Mp1 * glm::vec4(2, 0, 2, 1);
+				if(reflected)
+				wallCollider.push_back(Collider(glm::vec4(p1.x + 4.0f, p1.z, p2.x , p2.z)));
+				else 
+					wallCollider.push_back(Collider(glm::vec4(p1.x -4.0f, p1.z, p2.x , p2.z)));
+			}
+		}
 	}
 
-	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, GLuint texSpec, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
+	glm::vec3 winScale[3] = { glm::vec3(10.0f, 1.0f, 0.125f), glm::vec3(1.0f, 3.0f, 0.125f), glm::vec3(2.0f, 3.0f, 0.125f) };
+	void drawWindows(glm::mat4 Mp, GLuint tex, GLuint texSpec, bool zoriented = false) {
+		glm::mat4 Mp1 = glm::translate(Mp, glm::vec3(0.0f, 4.0f, 0.0f));
+		if (!zoriented)
+			Mp1 = glm::scale(Mp1, winScale[0]);
+		else
+			Mp1 = glm::scale(Mp1, glm::vec3(winScale[0].z, winScale[0].y, winScale[0].x));
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
 
-		glm::vec3 plateCoords;
-		int min, max;
-		int j = 0;
+		Mp1 = glm::translate(Mp, glm::vec3(0.0f, -4.0f, 0.0f));
+		if (!zoriented)
+			Mp1 = glm::scale(Mp1, winScale[0]);
+		else
+			Mp1 = glm::scale(Mp1, glm::vec3(winScale[0].z, winScale[0].y, winScale[0].x));
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
 
-		
 
-		if (rotated) {//z axis
-			for (float h = 0; h <= height; h += 1) {
-				for (float i = -range, j = 0; i < range; i += 2 * plateScal.z, j++) {
-					if (wt == DOOR) {
-						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
-					}
-					else if (wt == WINDOWS) {
-						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
-							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
-					}
-					else
-						drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
-				}
-			}
+		if (!zoriented) {
+			Mp1 = glm::translate(Mp, glm::vec3(-9.0f, 0.0f, 0.0f));
+			Mp1 = glm::scale(Mp1, winScale[1]);
 		}
 		else {
-			for (float h = 0; h <= height; h += 1) {
-				for (float i = -range, j = 0; i < range; i += 2 * plateScal.x, j++) {
-					if (wt == DOOR) {
-						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
-					}
-					else if (wt == WINDOWS) {
-						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
-							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
-					}
-					else 
-						drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
-				}
-
-			}
+			Mp1 = glm::translate(Mp, glm::vec3(0.0f, 0.0f, -9.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(winScale[1].z, winScale[1].y, winScale[1].x));
 		}
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
+
+
+		if (!zoriented) {
+			Mp1 = glm::translate(Mp, glm::vec3(9.0f, 0.0f, 0.0f));
+			Mp1 = glm::scale(Mp1, winScale[1]);
+		}
+		else {
+			Mp1 = glm::translate(Mp, glm::vec3(0.0f, 0.0f, 9.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(winScale[1].z, winScale[1].y, winScale[1].x));
+		}
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
+
+		Mp1 = glm::translate(Mp, glm::vec3(0.0f, 0.0f, 0.0f));
+		if (!zoriented)
+			Mp1 = glm::scale(Mp1, winScale[2]);
+		else
+			Mp1 = glm::scale(Mp1, glm::vec3(winScale[2].z, winScale[2].y, winScale[2].x));
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
+	}
+
+	
+	void drawDoor(glm::mat4 Mp, GLuint tex, GLuint texSpec, bool zoriented = false) {
+		glm::mat4 Mp1;
+		if (!zoriented) {
+			Mp1 = glm::translate(Mp, glm::vec3(-7.0f, 0.0f, 0.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(3.0f, 5.0f, 0.125f));
+		}
+		else {
+			Mp1 = glm::translate(Mp, glm::vec3(0.0f, 0.0f, -7.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(0.1250f, 5.0f, 3.0f));
+
+		}
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
+		if (!zoriented) {
+			Mp1 = glm::translate(Mp, glm::vec3(6.0f, 0.0f, 0.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(4.0f, 5.0f, 0.125f));
+		}
+		else {
+			Mp1 = glm::translate(Mp, glm::vec3(0.0f, 0.0f, 6.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(0.125f, 5.0f, 4.0f));
+		}
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
+		if (!zoriented) {
+			Mp1 = glm::translate(Mp, glm::vec3(-1.0f, 4.5f, 0.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(3.0f, 1.0f, 0.125f));
+		}
+		else {
+			Mp1 = glm::translate(Mp, glm::vec3(0.0f, 4.5f, -1.0f));
+			Mp1 = glm::scale(Mp1, glm::vec3(0.125f, 1.0f, 3.0f));
+		}
+		textureCubeSpec(Mp1, tex, texSpec, lpmain);
 	}
 };
 
@@ -501,10 +638,10 @@ public:
 			}
 			Ms = glm::translate(Ms, glm::vec3((float)roomCoord, 0.0f, offset));
 			Room wall(height, floorScaleVec.y);
-			wall.drawWall(0, Ms, floorScaleVec.x, tex0, texSpecWall, plateScalNotRot, floorScaleVec.x, rotFlag, DOOR);
-			wall.drawWall(0, Ms, -floorScaleVec.x, tex0, texSpecWall, plateScalNotRot, floorScaleVec.x, rotFlag, WINDOWS);
-			wall.drawWall(1, Ms, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, rotFlag);
-			wall.drawWall(1, Ms, -floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, rotFlag);
+			wall.drawWall(0, Ms, floorScaleVec.z, tex0, texSpecWall, rotFlag, DOOR);
+			wall.drawWall(0, Ms, -floorScaleVec.z, tex0, texSpecWall, rotFlag, WINDOWS);
+			wall.drawWall(1, Ms, floorScaleVec.x, tex0, texSpecWall, rotFlag);
+			wall.drawWall(1, Ms, -floorScaleVec.x, tex0, texSpecWall, rotFlag);
 
 			//floor
 			for (int i = 0; i < 2; i++) {
@@ -519,10 +656,10 @@ public:
 				Mc = glm::translate(Mc, glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				if (rn == 0) {
 					glm::mat4 Mw = glm::translate(Mc, glm::vec3(-20.0f, 0.0f, 0.0f));
-					wall.drawWall(1, Mw, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, DOOR);
+					wall.drawWall(1, Mw, floorScaleVec.z, tex0, texSpecWall, !rotFlag, WINDOWS);
 				}
 				if (rn == roomNum-1) {
-					wall.drawWall(1, Mc, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, WINDOWS);
+					wall.drawWall(1, Mc, floorScaleVec.z, tex0, texSpecWall, !rotFlag, WINDOWS);
 				}
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
@@ -670,24 +807,30 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 	int collRes = 0;
 	bool collx = false;
 	bool colly = false;
-	collRes = collisionDetected(cameraPos);
-	if (collRes == 3) {
-		collx = true;
-		colly = true;
+	//collRes = collisionDetected(cameraPos);
+	for (int i = 0; i < wallCollider.size(); i++) {
+		collRes = wallCollider.at(i).doIntersect(glm::vec2(tempCam.x, tempCam.z), glm::vec2(cameraPos.x, cameraPos.z));
+
+		if (collRes == 3) {
+			collx = true;
+			colly = true;
+		}
+		else if (collRes == 1) {
+			collx = true;
+		}
+		else if (collRes == 2) {
+			colly = true;
+		}
 	}
-	else if (collRes == 1) {
-		collx = true;
-	}
-	else if (collRes == 2) {
-		colly = true;
-	}
+	printf("%f\n", cameraPos.x);
+	wallCollider.clear();
 	for (int i = 0; i < collidingModels.size(); i++) {
 		colliderCheck = collidingModels.at(i).collider.doIntersect(glm::vec2(tempCam.x, tempCam.z), glm::vec2(cameraPos.x, cameraPos.z)); // -1.0f to compense a shift between hitbox and texture
 		if (colliderCheck == 3) {
 			collx = true;
 			colly = true;
 		}
-		else if (colliderCheck == 1) {//TO FIX
+		else if (colliderCheck == 1) {
 			collx = true;
 		}
 		else if (colliderCheck == 2) {
@@ -804,7 +947,7 @@ int main(void)
 			}
 			drinkUp = false;
 		}
-		std::cout << nearestBottle(bottlePositions) << std::endl;
+		//std::cout << nearestBottle(bottlePositions) << std::endl;
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
 	freeOpenGLProgram(window);
