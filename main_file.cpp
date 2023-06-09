@@ -875,11 +875,11 @@ int main(void)
 				backgroundMusic.setPlayingOffset(startOffset);
 				backgroundMusic.play();
 			}
-			if (drunkLevel == 1) {
+			if (drunkLevel == 10) {
 				drunk_coef = 0.0;
 				backgroundMusic.setBuffer(buffer6);
 				backgroundMusic.play();
-				defaultSpeed /= 4;
+				defaultSpeed /= 6.0;
 			}
 		}
 
