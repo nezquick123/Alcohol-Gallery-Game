@@ -435,7 +435,7 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-float drunk_coef = 1.0f; //test conflict
+float drunk_coef = 0.0f; //currently only works when equals 0
 
 std::vector <Collider> wallCollider;
 
