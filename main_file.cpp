@@ -52,8 +52,8 @@ GLuint tex1;
 GLuint skytex;
 GLuint woodtex;
 GLuint orangeGlass;
-
-
+GLuint deadFloor;
+GLuint stainedGlass;
 GLuint texSpecWall;
 GLuint texSpecFloor;
 
@@ -73,7 +73,8 @@ float pitch = 0.0f;
 float lastX = 900.0f / 2.0;
 float lastY = 900.0f / 2.0;
 float fov = 45.0f;
-
+float drunk_coef = 0.0f; //test conflict
+byte drunkLevel = 0;
 bool drinkUp = false;
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
@@ -145,18 +146,19 @@ void error_callback(int error, const char* description) {
 
 
 
-
+float defaultSpeed = 0.8f;
 //Procedura obsługi klawiatury
 void key_callback(GLFWwindow* window, int key,
 	int scancode, int action, int mods) {
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_W) moveSpeedx = -0.8f;
-		if (key == GLFW_KEY_S) moveSpeedx = 0.8f;
-		if (key == GLFW_KEY_A) moveSpeedz = -0.8f;
-		if (key == GLFW_KEY_D) moveSpeedz = 0.8f;
+		if (key == GLFW_KEY_W) moveSpeedx = -defaultSpeed;
+		if (key == GLFW_KEY_S) moveSpeedx = defaultSpeed;
+		if (key == GLFW_KEY_A) moveSpeedz = -defaultSpeed;
+		if (key == GLFW_KEY_D) moveSpeedz = defaultSpeed;
 		if (key == GLFW_KEY_ESCAPE) close = true;
 		if (key == GLFW_KEY_E) drinkUp = true;
+		if (key == GLFW_KEY_F) drunkLevel = 10.0f;
 	}
 
 	if (action == GLFW_RELEASE) {
@@ -318,6 +320,7 @@ std::vector<std::string> bottleNames = {"models/Carafe_with_stopper.obj", "model
 //jack working but too many meshes
 CustomModel table;
 CustomModel bottle;
+CustomModel gigaBottle;
 std::vector <CustomModel> bottleModels;//vector with bottles with diffrent models
 std::vector <CustomModel> collidingModels;
 std::vector <glm::vec3> bottlePositions;
@@ -340,8 +343,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	sp = new ShaderProgram("v_simplest.glsl", NULL, "f_simplest.glsl");
-	tex0 = readTexture("wall_1.png");
-	tex1 = readTexture("floor_text.png");
+
 	skytex = readTexture("sky.png");
 	woodtex = readTexture("wood.png");
 	orangeGlass = readTexture("glass_orange.png");
@@ -350,6 +352,8 @@ void initOpenGLProgram(GLFWwindow* window) {
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
+	deadFloor = readTexture("dead_text.png");
+	stainedGlass = readTexture("stainedGlass.png");
 	
 	//bottles
 	for (int i = 0; i < 10; i++) {
@@ -357,6 +361,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 		bottle.loadTexture(bottleNames[selectModel]);
 		bottleModels.push_back(bottle);
 	}
+	gigaBottle.loadTexture(bottleNames[0]);
 	printf("Namessize: %d BottleSize %d", bottleNames.size(), bottleModels.size());
 	//Colliding models
 	//glm::vec3 positions[10];
@@ -371,6 +376,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 		//bottlePositions[i] = glm::vec3((i-5) * 20.0f - 50.0f, 1.0f, -21.0f);
 		bottlePositions.push_back(glm::vec3((i - 5) * 20.0f - 50.0f, 1.0f, -21.0f));
 	}
+	bottlePositions.push_back(glm::vec3(0.0f, 0.0f, 0.0f));
 	for (int i = 0; i < 10; i++) {
 		table.size = glm::vec2(2.0f, 2.0f);
 		table.pos = bottlePositions.at(i);
@@ -399,7 +405,7 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-float drunk_coef = 0.0f; //test conflict
+
 
 class Room {
 	int height;
@@ -528,7 +534,7 @@ public:
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 					Mc = glm::scale(Mc, floorScaleVec);
-					textureCube(Mc, tex1, lpmain);
+					textureCube(Mc,  tex1 , lpmain);
 					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				}
 			}
@@ -752,6 +758,14 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 
 	M = glm::mat4(1.0f);
 	M = glm::translate(M, cameraPos);
+
+	if (drunkLevel == 10) {
+		glm::mat4 M = glm::mat4(1.0f);
+		M = glm::translate(M, glm::vec3(1.0f, 5.0f, 1.0f));
+		M = glm::scale(M, glm::vec3(20.0f, 20.0f, 20.0f));
+		gigaBottle.draw(M, stainedGlass, lpmain);
+	}
+
 	glfwSwapBuffers(window); //Copy back buffer to the front buffer
 }
 
@@ -786,12 +800,13 @@ int main(void)
 	initOpenGLProgram(window); //Call initialization procedure
 
 	//SFML
-	sf::SoundBuffer buffer1, buffer2, buffer3, buffer4, buffer5;
+	sf::SoundBuffer buffer1, buffer2, buffer3, buffer4, buffer5, buffer6;
 	if (!buffer1.loadFromFile("entertainer.wav") 
 		|| !buffer2.loadFromFile("drink.wav")
 		|| !buffer3.loadFromFile("entertainer125.wav")
 		|| !buffer4.loadFromFile("entertainer150.wav")
-		|| !buffer5.loadFromFile("entertainer175.wav")) {
+		|| !buffer5.loadFromFile("entertainer175.wav")
+		|| !buffer6.loadFromFile("lacrymosa.wav")) {
 		return 1; // Error loading sound files
 	}
 
@@ -804,13 +819,14 @@ int main(void)
 	//Main application loop
 
 	float drunkIncrement = 0.2f;
-	byte drunkLevel = 0;
+
 	float music125toggleTime = 0;
 	float music150toggleTime = 0;
 	
 	float startAngle = 0.0f;
 	float musicPitch = 1;
 	float musicVolume = 20;
+	bool ascending = false;
 	backgroundMusic.setVolume(musicVolume);
 	sf::Time startOffset;
 	glfwSetTime(0); //clear internal timer
@@ -820,8 +836,8 @@ int main(void)
 		
 		std::cout << sinarg << std::endl;
 		//glfwSetTime(0); //clear internal timer
-		startAngle = 0.0f;
-		drawScene(window, 0.0f); //Execute drawing procedure
+		if (!ascending) startAngle = 0.0f;
+		drawScene(window, startAngle); //Execute drawing procedure
 		int nearestBottleId = nearestBottle(bottlePositions);
 		if (drinkUp && nearestBottleId != -1 && bottleExists(nearestBottleId, bottlesStillStanding)) {
 			bottlesStillStanding.erase(std::remove(bottlesStillStanding.begin(), bottlesStillStanding.end(), nearestBottleId), bottlesStillStanding.end());
@@ -859,8 +875,33 @@ int main(void)
 				backgroundMusic.setPlayingOffset(startOffset);
 				backgroundMusic.play();
 			}
-			
+			if (drunkLevel == 10) {
+				drunk_coef = 0.0;
+				backgroundMusic.setBuffer(buffer6);
+				backgroundMusic.play();
+				defaultSpeed /= 6.0;
+			}
 		}
+
+		if (drinkUp && nearestBottle(bottlePositions) == 10 && drunkLevel == 10) {
+			/*moveSpeedx = 0;
+			moveSpeedz = 0;*/
+			double timeToStop = glfwGetTime() + 5.0f;
+			drinkingSound.play();
+			while (glfwGetTime() < timeToStop) {
+				drawScene(window, startAngle);
+				startAngle += 0.02f;
+			}
+			timeToStop = glfwGetTime() + 5.0f;
+			ascending = true;
+			while (glfwGetTime() < timeToStop) {
+				cameraPos += glm::vec3(0, 0.01f, 0);
+				drawScene(window, startAngle);
+			}
+			drinkUp = false;
+			moveSpeedx = -0.08f;
+		}
+
 		std::cout << nearestBottle(bottlePositions) << std::endl;
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
 	}
