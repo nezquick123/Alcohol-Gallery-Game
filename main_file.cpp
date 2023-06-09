@@ -45,18 +45,21 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <windows.h>
 #include <SFML/Audio.hpp>
 #include "sound.h"
-void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
+#include "floor.h"
+#include "textures.h"
+#include "globals.h"
+//void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
 void drinkingAnimation();
-GLuint tex0;
-GLuint tex1;
-GLuint skytex;
-GLuint woodtex;
-GLuint orangeGlass;
-
-
-GLuint texSpecWall;
-GLuint texSpecFloor;
+//GLuint tex0;
+//GLuint tex1;
+//GLuint skytex;
+//GLuint woodtex;
+//GLuint orangeGlass;
+//
+//
+//GLuint texSpecWall;
+//GLuint texSpecFloor;
 
 std::vector<glm::mat4> modelPos;
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
@@ -64,8 +67,8 @@ glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 tempCam = cameraPos;
 float moveSpeedx = 0;
 float moveSpeedz = 0;
-ShaderProgram* sp; //Pointer to the shader program
-glm::vec4 lpmain = glm::vec4(0, 9, 0, 1); //light position, world space
+//ShaderProgram* sp; //Pointer to the shader program
+//glm::vec4 lpmain = glm::vec4(0, 9, 0, 1); //light position, world space
 
 
 bool firstMouse = true;
@@ -133,11 +136,11 @@ GLuint readTexture(const char* filename) { //global declaration
 	return tex;
 }
 
-float* vertices = myCubeVertices;
-float* texCoords = myCubeTexCoords;
-float* colors = myCubeColors;
-float* normals = myCubeNormals;
-int vertexCount = myCubeVertexCount;
+//float* vertices = myCubeVertices;
+//float* texCoords = myCubeTexCoords;
+//float* colors = myCubeColors;
+//float* normals = myCubeNormals;
+//int vertexCount = myCubeVertexCount;
 bool close = false;
 //Error processing callback procedure
 void error_callback(int error, const char* description) {
@@ -341,8 +344,6 @@ void initOpenGLProgram(GLFWwindow* window) {
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	sp = new ShaderProgram("v_simplest.glsl", NULL, "f_simplest.glsl");
-	tex0 = readTexture("wall_1.png");
-	tex1 = readTexture("floor_text.png");
 	skytex = readTexture("sky.png");
 	woodtex = readTexture("wood.png");
 	orangeGlass = readTexture("glass_orange.png");
@@ -397,147 +398,84 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 }
 
 
-enum wallType{BASIC, WINDOWS, DOOR};
+//enum wallType{BASIC, WINDOWS, DOOR};
 
-float sinarg = 0;
-float drunk_coef = 0.0f; //test conflict
+//float sinarg = 0;
+//float drunk_coef = 0.0f;
 
-class Room {
-	int height;
-	float floorH;
-public:
-	Room(int h, float fh) {
-		height = h;
-		floorH = fh;
-	}
-
-	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, GLuint texSpec, bool reflected, float rotateAngle = 0) {
-		float drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
-		float scalx = 1.0f, scalz = 1.0f;
-		if (drunk_coef != 0.0f) {
-
-			if (reflected) {
-				drunkfun *= -1;
-
-			}
-			if (rotateAngle != 0) {
-				scalx = abs(drunkfun) * 5;
-			}
-			else
-				scalz = abs(drunkfun) * 5;
-		}
-		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x  + drunkfun , floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
-		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
-		textureCubeSpec(Mp, tex, texSpec, lpmain);
-	}
-
-	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, GLuint texSpec, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
-
-		glm::vec3 plateCoords;
-		int min, max;
-		int j = 0;
-
-		
-
-		if (rotated) {//z axis
-			for (float h = 0; h <= height; h += 1) {
-				for (float i = -range, j = 0; i < range; i += 2 * plateScal.z, j++) {
-					if (wt == DOOR) {
-						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
-					}
-					else if (wt == WINDOWS) {
-						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
-							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
-					}
-					else
-						drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
-				}
-			}
-		}
-		else {
-			for (float h = 0; h <= height; h += 1) {
-				for (float i = -range, j = 0; i < range; i += 2 * plateScal.x, j++) {
-					if (wt == DOOR) {
-						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
-							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
-					}
-					else if (wt == WINDOWS) {
-						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
-							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
-					}
-					else 
-						drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
-				}
-
-			}
-		}
-	}
-};
-
-class Floor {
-private:
-	glm::vec3 plateScalNotRot = glm::vec3(1.0f, 1.0f, 0.125f);
-	glm::vec3 plateScalRot = glm::vec3(0.125f, 1.0f, 1.0f);
-	glm::vec3 floorScaleVec = glm::vec3(10.0f, 0.125f, 10.0f);
-	int height = 5;
-	int roomNum = 5;
-
-public:
-	void draw(float offset) {//offset of rooms relative to X axis
-		bool rotFlag = false;
-		if (offset > 0.0f) //negative offset means that rooms need to be rotated by 180 degrees around Y axis
-		{
-			rotFlag = true;
-			offset *= -1;
-		}
-
-		for (int rn = 0; rn <= roomNum -1; rn++) { //room number
-			int roomCoord = -50 + 20 * rn;
-			glm::mat4 Ms = glm::mat4(1.0f);
-			if (rotFlag) //rotate and correct x offset
-			{
-				Ms = glm::rotate(Ms, PI, glm::vec3(0.0f, 1.0f, 0.0f));
-				Ms = glm::translate(Ms, glm::vec3(20.0f, 0.0f, offset));
-			}
-			Ms = glm::translate(Ms, glm::vec3((float)roomCoord, 0.0f, offset));
-			Room wall(height, floorScaleVec.y);
-			wall.drawWall(0, Ms, floorScaleVec.x, tex0, texSpecWall, plateScalNotRot, floorScaleVec.x, rotFlag, DOOR);
-			wall.drawWall(0, Ms, -floorScaleVec.x, tex0, texSpecWall, plateScalNotRot, floorScaleVec.x, rotFlag, WINDOWS);
-			wall.drawWall(1, Ms, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, rotFlag);
-			wall.drawWall(1, Ms, -floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, rotFlag);
-
-			//floor
-			for (int i = 0; i < 2; i++) {
-				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y*2, 0.0f));//ceiling if i == 1
-				Mp = glm::scale(Mp, floorScaleVec);
-				textureCube(Mp, tex1, lpmain);
-			}
-			
-			//corridor
-			if (rotFlag) { //just for one side
-				glm::mat4 Mc = glm::mat4(1.0f);
-				Mc = glm::translate(Mc, glm::vec3((float)roomCoord, 0.0f, 0.0f));
-				if (rn == 0) {
-					glm::mat4 Mw = glm::translate(Mc, glm::vec3(-20.0f, 0.0f, 0.0f));
-					wall.drawWall(1, Mw, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, DOOR);
-				}
-				if (rn == roomNum-1) {
-					wall.drawWall(1, Mc, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, WINDOWS);
-				}
-				for (int i = 0; i < 2; i++) {
-					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
-					Mc = glm::scale(Mc, floorScaleVec);
-					textureCube(Mc, tex1, lpmain);
-					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
-				}
-			}
-		}
-
-	}
-
-};
+//class Room {
+//	int height;
+//	float floorH;
+//public:
+//	Room(int h, float fh) {
+//		height = h;
+//		floorH = fh;
+//	}
+//
+//	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, GLuint texSpec, bool reflected, float rotateAngle = 0) {
+//		float drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
+//		float scalx = 1.0f, scalz = 1.0f;
+//		if (drunk_coef != 0.0f) {
+//
+//			if (reflected) {
+//				drunkfun *= -1;
+//
+//			}
+//			if (rotateAngle != 0) {
+//				scalx = abs(drunkfun) * 5;
+//			}
+//			else
+//				scalz = abs(drunkfun) * 5;
+//		}
+//		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+//		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x  + drunkfun , floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
+//		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
+//		textureCubeSpec(Mp, tex, texSpec, lpmain);
+//	}
+//
+//	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, GLuint texSpec, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
+//
+//		glm::vec3 plateCoords;
+//		int min, max;
+//		int j = 0;
+//
+//		
+//
+//		if (rotated) {//z axis
+//			for (float h = 0; h <= height; h += 1) {
+//				for (float i = -range, j = 0; i < range; i += 2 * plateScal.z, j++) {
+//					if (wt == DOOR) {
+//						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
+//							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
+//					}
+//					else if (wt == WINDOWS) {
+//						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
+//							drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
+//					}
+//					else
+//						drawPlate(M, glm::vec3(var, h, i), plateScal, tex, texSpec, reflected, 90);
+//				}
+//			}
+//		}
+//		else {
+//			for (float h = 0; h <= height; h += 1) {
+//				for (float i = -range, j = 0; i < range; i += 2 * plateScal.x, j++) {
+//					if (wt == DOOR) {
+//						if (!(h >= 0 && h < 5 && j >= 6 && j <= 8))
+//							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
+//					}
+//					else if (wt == WINDOWS) {
+//						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
+//							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
+//					}
+//					else 
+//						drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
+//				}
+//
+//			}
+//		}
+//	}
+//};
 
 float collisionXtab[4] = { -40.0f, -20.0f, 0.0f, 20.0f };
 float precisionWall = 1.3f;
@@ -597,68 +535,68 @@ int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x
 }
 
 
-void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside) {
-	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
-	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
-	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
-
-	glUniform1i(sp->u("negate"), inside);
-	glEnableVertexAttribArray(sp->a("color")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("color"), 4, GL_FLOAT, false, 0, colors); //Specify source of the data for the attribute color
-	glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
-	glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, normals); //Specify source of the data for the attribute normal
-
-
-	glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, myCubeTexCoords); //Specify source of the data for the attribute normal
-	glUniform1i(sp->u("textureMap0"), 5);
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, tex);
-
-	/// //////////////////////////////////////
-
-	glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
-	glDisableVertexAttribArray(sp->a("texCoord"));
-	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
-	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
-	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
-}
+//void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside) {
+//	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
+//	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
+//	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
+//
+//	glUniform1i(sp->u("negate"), inside);
+//	glEnableVertexAttribArray(sp->a("color")); //Enable sending data to the attribute color
+//	glVertexAttribPointer(sp->a("color"), 4, GL_FLOAT, false, 0, colors); //Specify source of the data for the attribute color
+//	glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
+//	glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
+//	glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, normals); //Specify source of the data for the attribute normal
+//
+//
+//	glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
+//	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, myCubeTexCoords); //Specify source of the data for the attribute normal
+//	glUniform1i(sp->u("textureMap0"), 5);
+//	glActiveTexture(GL_TEXTURE5);
+//	glBindTexture(GL_TEXTURE_2D, tex);
+//
+//	/// //////////////////////////////////////
+//
+//	glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
+//	glDisableVertexAttribArray(sp->a("texCoord"));
+//	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
+//	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
+//	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+//}
 Floor f;
 
-void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside) {
-	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
-	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
-	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
-
-	glUniform1i(sp->u("negate"), inside);
-	glEnableVertexAttribArray(sp->a("color")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("color"), 4, GL_FLOAT, false, 0, colors); //Specify source of the data for the attribute color
-	glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
-	glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, normals); //Specify source of the data for the attribute normal
-
-
-	glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
-	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, myCubeTexCoords); //Specify source of the data for the attribute normal
-	glUniform1i(sp->u("textureMap0"), 6);
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, tex);
-
-	glUniform1i(sp->u("textureMap1"), 7);
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, texSpec);
-
-
-
-	/// //////////////////////////////////////
-
-	glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
-	glDisableVertexAttribArray(sp->a("texCoord"));
-	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
-	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
-	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
-}
+//void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside) {
+//	glUniformMatrix4fv(sp->u("M"), 1, false, glm::value_ptr(M));
+//	glEnableVertexAttribArray(sp->a("vertex")); //Enable sending data to the attribute vertex
+//	glVertexAttribPointer(sp->a("vertex"), 4, GL_FLOAT, false, 0, vertices); //Specify source of the data for the attribute vertex
+//
+//	glUniform1i(sp->u("negate"), inside);
+//	glEnableVertexAttribArray(sp->a("color")); //Enable sending data to the attribute color
+//	glVertexAttribPointer(sp->a("color"), 4, GL_FLOAT, false, 0, colors); //Specify source of the data for the attribute color
+//	glUniform4f(sp->u("lp"), lp.x, lp.y, lp.z, 1);
+//	glEnableVertexAttribArray(sp->a("normal")); //Enable sending data to the attribute color
+//	glVertexAttribPointer(sp->a("normal"), 4, GL_FLOAT, false, 0, normals); //Specify source of the data for the attribute normal
+//
+//
+//	glEnableVertexAttribArray(sp->a("texCoord")); //Enable sending data to the attribute color
+//	glVertexAttribPointer(sp->a("texCoord"), 2, GL_FLOAT, false, 0, myCubeTexCoords); //Specify source of the data for the attribute normal
+//	glUniform1i(sp->u("textureMap0"), 6);
+//	glActiveTexture(GL_TEXTURE6);
+//	glBindTexture(GL_TEXTURE_2D, tex);
+//
+//	glUniform1i(sp->u("textureMap1"), 7);
+//	glActiveTexture(GL_TEXTURE7);
+//	glBindTexture(GL_TEXTURE_2D, texSpec);
+//
+//
+//
+//	/// //////////////////////////////////////
+//
+//	glDrawArrays(GL_TRIANGLES, 0, vertexCount); //Draw the object
+//	glDisableVertexAttribArray(sp->a("texCoord"));
+//	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
+//	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
+//	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+//}
 
 //Drawing procedure
 void drawScene(GLFWwindow* window, float lookupAngle) {
@@ -716,7 +654,6 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 		cameraPos + cameraFront + glm::vec3(0.0f + sin(sinarg* 2*drunk_coef) * drunk_coef * 1/2, lookupAngle + cos(sinarg * 2 * drunk_coef) * drunk_coef * 1/2, 0.0f + sin(sinarg * 2 * drunk_coef) * drunk_coef * 1/2),
 		glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
 	//V = glm::rotate(V, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
 	
 	sp->use();//activate shading program
 	//Send parameters to graphics card
@@ -727,8 +664,8 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 	//modelPos.clear();
 
 	
-	f.draw(10.0f);
-	f.draw(-20.0f); 
+	f.draw(10.0f, tex0, tex1, texSpecWall);
+	f.draw(-20.0f, tex0, tex1, texSpecWall); 
 
 	glm::mat4 M = glm::mat4(1.0f);
 	for (int i = 0; i < collidingModels.size(); i++) {

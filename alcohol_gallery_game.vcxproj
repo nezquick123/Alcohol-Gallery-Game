@@ -22,25 +22,33 @@
     <ClInclude Include="allmodels.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="cube.h" />
+    <ClInclude Include="floor.h" />
+    <ClInclude Include="globals.h" />
     <ClInclude Include="hud.h" />
     <ClInclude Include="lodepng.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="myCube.h" />
+    <ClInclude Include="Room.h" />
     <ClInclude Include="shaderprogram.h" />
     <ClInclude Include="sound.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="teapot.h" />
+    <ClInclude Include="textures.h" />
     <ClInclude Include="torus.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cube.cpp" />
+    <ClCompile Include="floor.cpp" />
+    <ClCompile Include="globals.cpp" />
     <ClCompile Include="lodepng.cpp" />
     <ClCompile Include="main_file.cpp" />
     <ClCompile Include="model.cpp" />
+    <ClCompile Include="Room.cpp" />
     <ClCompile Include="shaderprogram.cpp" />
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="sphere.cpp" />
     <ClCompile Include="teapot.cpp" />
+    <ClCompile Include="textures.cpp" />
     <ClCompile Include="torus.cpp" />
   </ItemGroup>
   <ItemGroup>
