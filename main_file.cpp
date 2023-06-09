@@ -73,7 +73,7 @@ float pitch = 0.0f;
 float lastX = 900.0f / 2.0;
 float lastY = 900.0f / 2.0;
 float fov = 45.0f;
-
+float drunk_coef = 0.0f; //test conflict
 bool drinkUp = false;
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
@@ -157,6 +157,7 @@ void key_callback(GLFWwindow* window, int key,
 		if (key == GLFW_KEY_D) moveSpeedz = 0.8f;
 		if (key == GLFW_KEY_ESCAPE) close = true;
 		if (key == GLFW_KEY_E) drinkUp = true;
+		if (key == GLFW_KEY_F) drunk_coef = 10.0;
 	}
 
 	if (action == GLFW_RELEASE) {
@@ -399,7 +400,7 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-float drunk_coef = 0.0f; //test conflict
+
 
 class Room {
 	int height;
@@ -786,12 +787,13 @@ int main(void)
 	initOpenGLProgram(window); //Call initialization procedure
 
 	//SFML
-	sf::SoundBuffer buffer1, buffer2, buffer3, buffer4, buffer5;
+	sf::SoundBuffer buffer1, buffer2, buffer3, buffer4, buffer5, buffer6;
 	if (!buffer1.loadFromFile("entertainer.wav") 
 		|| !buffer2.loadFromFile("drink.wav")
 		|| !buffer3.loadFromFile("entertainer125.wav")
 		|| !buffer4.loadFromFile("entertainer150.wav")
-		|| !buffer5.loadFromFile("entertainer175.wav")) {
+		|| !buffer5.loadFromFile("entertainer175.wav")
+		|| !buffer6.loadFromFile("lacrymosa.wav")) {
 		return 1; // Error loading sound files
 	}
 
@@ -859,7 +861,11 @@ int main(void)
 				backgroundMusic.setPlayingOffset(startOffset);
 				backgroundMusic.play();
 			}
-			
+			if (drunkLevel == 10) {
+				drunk_coef = 0.0;
+				backgroundMusic.setBuffer(buffer6);
+				backgroundMusic.play();
+			}
 		}
 		std::cout << nearestBottle(bottlePositions) << std::endl;
 		glfwPollEvents(); //Process callback procedures corresponding to the events that took place up to now
