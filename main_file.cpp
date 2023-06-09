@@ -53,8 +53,7 @@ GLuint skytex;
 GLuint woodtex;
 GLuint orangeGlass;
 GLuint deadFloor;
-
-
+GLuint stainedGlass;
 GLuint texSpecWall;
 GLuint texSpecFloor;
 
@@ -147,16 +146,16 @@ void error_callback(int error, const char* description) {
 
 
 
-
+float defaultSpeed = 0.8f;
 //Procedura obsługi klawiatury
 void key_callback(GLFWwindow* window, int key,
 	int scancode, int action, int mods) {
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_W) moveSpeedx = -0.8f;
-		if (key == GLFW_KEY_S) moveSpeedx = 0.8f;
-		if (key == GLFW_KEY_A) moveSpeedz = -0.8f;
-		if (key == GLFW_KEY_D) moveSpeedz = 0.8f;
+		if (key == GLFW_KEY_W) moveSpeedx = -defaultSpeed;
+		if (key == GLFW_KEY_S) moveSpeedx = defaultSpeed;
+		if (key == GLFW_KEY_A) moveSpeedz = -defaultSpeed;
+		if (key == GLFW_KEY_D) moveSpeedz = defaultSpeed;
 		if (key == GLFW_KEY_ESCAPE) close = true;
 		if (key == GLFW_KEY_E) drinkUp = true;
 		if (key == GLFW_KEY_F) drunkLevel = 10.0f;
@@ -354,6 +353,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
 	deadFloor = readTexture("dead_text.png");
+	stainedGlass = readTexture("stainedGlass.png");
 	
 	//bottles
 	for (int i = 0; i < 10; i++) {
@@ -763,7 +763,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 		glm::mat4 M = glm::mat4(1.0f);
 		M = glm::translate(M, glm::vec3(1.0f, 5.0f, 1.0f));
 		M = glm::scale(M, glm::vec3(20.0f, 20.0f, 20.0f));
-		gigaBottle.draw(M, orangeGlass, lpmain);
+		gigaBottle.draw(M, stainedGlass, lpmain);
 	}
 
 	glfwSwapBuffers(window); //Copy back buffer to the front buffer
@@ -826,6 +826,7 @@ int main(void)
 	float startAngle = 0.0f;
 	float musicPitch = 1;
 	float musicVolume = 20;
+	bool ascending = false;
 	backgroundMusic.setVolume(musicVolume);
 	sf::Time startOffset;
 	glfwSetTime(0); //clear internal timer
@@ -835,7 +836,7 @@ int main(void)
 		
 		std::cout << sinarg << std::endl;
 		//glfwSetTime(0); //clear internal timer
-		if (drunkLevel != 10) startAngle = 0.0f;
+		if (!ascending) startAngle = 0.0f;
 		drawScene(window, startAngle); //Execute drawing procedure
 		int nearestBottleId = nearestBottle(bottlePositions);
 		if (drinkUp && nearestBottleId != -1 && bottleExists(nearestBottleId, bottlesStillStanding)) {
@@ -874,14 +875,17 @@ int main(void)
 				backgroundMusic.setPlayingOffset(startOffset);
 				backgroundMusic.play();
 			}
-			if (drunkLevel == 10) {
+			if (drunkLevel == 1) {
 				drunk_coef = 0.0;
 				backgroundMusic.setBuffer(buffer6);
 				backgroundMusic.play();
+				defaultSpeed /= 4;
 			}
 		}
 
 		if (drinkUp && nearestBottle(bottlePositions) == 10 && drunkLevel == 10) {
+			/*moveSpeedx = 0;
+			moveSpeedz = 0;*/
 			double timeToStop = glfwGetTime() + 5.0f;
 			drinkingSound.play();
 			while (glfwGetTime() < timeToStop) {
@@ -889,6 +893,7 @@ int main(void)
 				startAngle += 0.02f;
 			}
 			timeToStop = glfwGetTime() + 5.0f;
+			ascending = true;
 			while (glfwGetTime() < timeToStop) {
 				cameraPos += glm::vec3(0, 0.01f, 0);
 				drawScene(window, startAngle);
