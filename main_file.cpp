@@ -51,6 +51,7 @@ void textureCubeSpec(glm::mat4 M, texturePack textureWalls, glm::vec4 lp, bool i
 
 
 texturePack wallTextures;
+texturePack floorTextures;
 //Diffuse
 GLuint tex0; 
 //Normal
@@ -72,7 +73,7 @@ glm::vec3 tempCam = cameraPos;
 float moveSpeedx = 0;
 float moveSpeedz = 0;
 ShaderProgram* sp; //Pointer to the shader program
-glm::vec4 lpmain = glm::vec4(0, 9, 0, 1); //light position, world space
+glm::vec4 lpmain = glm::vec4(0, 1, 0, 1); //light position, world space
 
 
 bool firstMouse = true;
@@ -358,6 +359,10 @@ void initOpenGLProgram(GLFWwindow* window) {
 	wallTextures.tex0 = readTexture("bricks2_diffuse.png"); 
 	wallTextures.tex1 = readTexture("bricks2_normal.png");
 	wallTextures.tex2 = readTexture("bricks2_height.png");
+
+	floorTextures.tex0 = readTexture("floor_base.png");
+	floorTextures.tex1 = readTexture("floor_normal.png");
+	floorTextures.tex2 = readTexture("floor_height.png");
 	
 	//bottles
 	for (int i = 0; i < 10; i++) {
@@ -492,13 +497,13 @@ public:
 			wall.drawWall(0, Ms, floorScaleVec.x, wallTextures, plateScalNotRot, floorScaleVec.x, rotFlag, DOOR);
 			wall.drawWall(0, Ms, -floorScaleVec.x, wallTextures, plateScalNotRot, floorScaleVec.x, rotFlag, WINDOWS);
 			wall.drawWall(1, Ms, floorScaleVec.z, wallTextures, plateScalRot, floorScaleVec.z, rotFlag);
-			wall.drawWall(1, Ms, -floorScaleVec.z, wallTextures, plateScalRot, floorScaleVec.z, rotFlag);
+			wall.drawWall(1, Ms, -floorScaleVec.z, floorTextures, plateScalRot, floorScaleVec.z, rotFlag);
 
 			//floor
 			for (int i = 0; i < 2; i++) {
 				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y*2, 0.0f));//ceiling if i == 1
 				Mp = glm::scale(Mp, floorScaleVec);
-				textureCube(Mp, tex1, lpmain);
+				textureCubeSpec(Mp, floorTextures, lpmain);
 			}
 			
 			//corridor
@@ -515,7 +520,7 @@ public:
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 					Mc = glm::scale(Mc, floorScaleVec);
-					textureCube(Mc, tex1, lpmain);
+					textureCubeSpec(Mc, floorTextures, lpmain);
 					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				}
 			}
