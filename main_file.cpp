@@ -57,6 +57,7 @@ GLuint stainedGlass;
 GLuint texSpecWall;
 GLuint texSpecFloor;
 
+int textureIndices[10];
 std::vector<glm::mat4> modelPos;
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -132,6 +133,7 @@ GLuint readTexture(const char* filename) { //global declaration
 	glGenerateMipmap(GL_TEXTURE_2D);
 	return tex;
 }
+std::vector <GLuint> bottleTex; 
 
 float* vertices = myCubeVertices;
 float* texCoords = myCubeTexCoords;
@@ -253,7 +255,7 @@ public:
 	glm::vec3 pos;
 	glm::vec2 size;
 	Collider collider;
-	void loadTexture(std::string filename) {
+	void load(std::string filename) {
 		Assimp::Importer importer;
 		verts.clear();
 		norms.clear();
@@ -346,8 +348,8 @@ void initOpenGLProgram(GLFWwindow* window) {
 
 	skytex = readTexture("sky.png");
 	woodtex = readTexture("wood.png");
-	orangeGlass = readTexture("glass_orange.png");
-	table.loadTexture("models/tableround.obj");
+	//orangeGlass = readTexture("glass_orange.png");
+	table.load("models/tableround.obj");
 	tex0 = readTexture("wood_texture.png");
 	tex1 = readTexture("floor_text.png");
 	texSpecWall = readTexture("wood_specular.png");
@@ -355,13 +357,21 @@ void initOpenGLProgram(GLFWwindow* window) {
 	deadFloor = readTexture("dead_text.png");
 	stainedGlass = readTexture("stainedGlass.png");
 	
+	bottleTex.push_back(readTexture("glass_orange.png"));
+	bottleTex.push_back(readTexture("green_violet.png"));
+	bottleTex.push_back(readTexture("red_blue.png"));
+
+	for (int i = 0; i < 10; i++) {
+		textureIndices[i] = rand() % bottleTex.size();
+	}
+
 	//bottles
 	for (int i = 0; i < 10; i++) {
 		int selectModel = rand() % bottleNames.size();
-		bottle.loadTexture(bottleNames[selectModel]);
+		bottle.load(bottleNames[selectModel]);
 		bottleModels.push_back(bottle);
 	}
-	gigaBottle.loadTexture(bottleNames[0]);
+	gigaBottle.load(bottleNames[0]);
 	printf("Namessize: %d BottleSize %d", bottleNames.size(), bottleModels.size());
 	//Colliding models
 	//glm::vec3 positions[10];
@@ -552,11 +562,11 @@ float doorsCoordNeg[5] = { -45.0f, -25.0f, -5.0f, 15.0f, 35.0f };
 int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x axis, 2 - wall parallel to z axis, 3 - both(corner)
 	bool xwall = false;
 	bool zwall = false;//TODO: find better name  ( ͡° ͜ʖ ͡°)
-	if (pos.z > 28.0f + abs(drunkfun) * 5 || pos.z < -28.0f){ //boundaries detection
+	if (pos.z > 28.0f || pos.z < -28.0f){ //boundaries detection
 		//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 		zwall = true;
 	}
-	if (pos.x > 38.0f + abs(drunkfun) * 5  || pos.x < -58.0f) {
+	if (pos.x > 38.0f  || pos.x < -58.0f) {
 		xwall = true; 
 	}
 	if (pos.z > 8.5f || pos.z < -8.5f) {
@@ -664,7 +674,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
 }
-
+bool ending = false;
 //Drawing procedure
 void drawScene(GLFWwindow* window, float lookupAngle) {
 	//************Place any code here that draws something inside the window******************l
@@ -702,18 +712,20 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 		}
 	}
 	//
-	if (collx && colly) {
-		cameraPos.x = tempCam.x;
-		cameraPos.z = tempCam.z;
-		std::cout << "3" << std::endl;
-	}
-	else if (collx) {
-		cameraPos.x = tempCam.x;
-		std::cout << "1" << std::endl;
-	}
-	else if (colly) {
-		cameraPos.z = tempCam.z;
-		//std::cout << "2" << std::endl;
+	if (!ending) {
+		if (collx && colly) {
+			cameraPos.x = tempCam.x;
+			cameraPos.z = tempCam.z;
+			std::cout << "3" << std::endl;
+		}
+		else if (collx) {
+			cameraPos.x = tempCam.x;
+			std::cout << "1" << std::endl;
+		}
+		else if (colly) {
+			cameraPos.z = tempCam.z;
+			//std::cout << "2" << std::endl;
+		}
 	}
 	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z); // ????
 	glm::mat4 P = glm::perspective(glm::radians(50.0f + sin(sinarg * 2 * drunk_coef)*drunk_coef*20), 1.0f, 1.0f, 150.0f); //Compute projection matrix
@@ -747,7 +759,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 		//bottles drawing
 		M = glm::translate(M, glm::vec3(1.0f, 1.7f, 1.0f));
 		M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
-		bottleModels[i].draw(M, orangeGlass, lpmain);
+		bottleModels[i].draw(M, bottleTex[textureIndices[i]], lpmain);
 	}
 
 	
@@ -825,7 +837,7 @@ int main(void)
 	
 	float startAngle = 0.0f;
 	float musicPitch = 1;
-	float musicVolume = 2;
+	float musicVolume = 10;
 	bool ascending = false;
 	backgroundMusic.setVolume(musicVolume);
 	sf::Time startOffset;
@@ -880,6 +892,7 @@ int main(void)
 				backgroundMusic.setBuffer(buffer6);
 				backgroundMusic.play();
 				defaultSpeed /= 6.0;
+	
 			}
 		}
 
@@ -900,6 +913,7 @@ int main(void)
 			}
 			drinkUp = false;
 			moveSpeedx = -0.08f;
+			ending = true;
 		}
 
 		std::cout << nearestBottle(bottlePositions) << std::endl;
