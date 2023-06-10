@@ -355,9 +355,9 @@ void initOpenGLProgram(GLFWwindow* window) {
 	texSpecWall = readTexture("wood_specular.png");
 	texSpecFloor = readTexture("wood_floor_spec.png");
 
-	wallTextures.tex0 = readTexture("Wood_Panel_003_basecolor.png"); 
-	wallTextures.tex1 = readTexture("Wood_Panel_003_normal.png");
-	wallTextures.tex2 = readTexture("Wood_Panel_003_height.png");
+	wallTextures.tex0 = readTexture("bricks2_diffuse.png"); 
+	wallTextures.tex1 = readTexture("bricks2_normal.png");
+	wallTextures.tex2 = readTexture("bricks2_height.png");
 	
 	//bottles
 	for (int i = 0; i < 10; i++) {

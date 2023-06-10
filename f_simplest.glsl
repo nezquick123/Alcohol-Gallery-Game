@@ -33,6 +33,7 @@ vec2 parallaxTexCoords(vec4 v, vec2 t, float h, float s){
 
 void main(void) {
     //Znormalizowane interpolowane wektory
+	float brightness = 0.5;
 	vec4 ml = normalize(l);
 
 	vec4 mv=normalize(v);
@@ -46,6 +47,10 @@ void main(void) {
 	vec4 kd = texture(textureMap0, nt); 
 	//vec4 ks = texture(textureMap1, nt);
 	vec4 ks = vec4(1,1,1,1);
+
+	// Adjust the brightness by multiplying the kd and ks values with the brightness factor
+    kd.rgb *= brightness;
+    ks.rgb *= brightness;
 
 	//Obliczenie modelu oœwietlenia
 	float nl = clamp(dot(mn, ml), 0, 1);
