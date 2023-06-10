@@ -405,7 +405,7 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 enum wallType{BASIC, WINDOWS, DOOR};
 
 float sinarg = 0;
-
+float drunkfun = 0;
 
 class Room {
 	int height;
@@ -417,7 +417,7 @@ public:
 	}
 
 	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, GLuint texSpec, bool reflected, float rotateAngle = 0) {
-		float drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
+		drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
 		float scalx = 1.0f, scalz = 1.0f;
 		if (drunk_coef != 0.0f) {
 
@@ -552,20 +552,20 @@ float doorsCoordNeg[5] = { -45.0f, -25.0f, -5.0f, 15.0f, 35.0f };
 int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x axis, 2 - wall parallel to z axis, 3 - both(corner)
 	bool xwall = false;
 	bool zwall = false;//TODO: find better name  ( ͡° ͜ʖ ͡°)
-	if (pos.z > 28.0f || pos.z < -28.0f){ //boundaries detection
+	if (pos.z > 28.0f + abs(drunkfun) * 5 || pos.z < -28.0f){ //boundaries detection
 		//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 		zwall = true;
 	}
-	if (pos.x > 38.0f || pos.x < -58.0f) {
-		xwall = true;
+	if (pos.x > 38.0f + abs(drunkfun) * 5  || pos.x < -58.0f) {
+		xwall = true; 
 	}
 	if (pos.z > 8.5f || pos.z < -8.5f) {
 		for (int i = 0; i < 4; i++) {
-			if (abs(pos.x - collisionXtab[i]) < precisionWall) {
+			if (abs(pos.x - collisionXtab[i]) < precisionWall+abs(drunkfun)*5) {
 				xwall = true;
 			}
 		}
-		if (abs(pos.z - 10.0f) < 1.3f) {
+		if (abs(pos.z - 10.0f) < 1.3f+abs(drunkfun) * 5) {
 			//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
 				if (abs(pos.x - doorsCoordPos[i]) < doorWidth) {
@@ -578,7 +578,7 @@ int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x
 			}
 			
 		}
-		else if (abs(pos.z + 10.0f) < 1.3f) {
+		else if (abs(pos.z + 10.0f) < 1.3f ) {
 			//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
 				if (abs(pos.x - doorsCoordNeg[i]) < doorWidth) {
@@ -825,7 +825,7 @@ int main(void)
 	
 	float startAngle = 0.0f;
 	float musicPitch = 1;
-	float musicVolume = 20;
+	float musicVolume = 2;
 	bool ascending = false;
 	backgroundMusic.setVolume(musicVolume);
 	sf::Time startOffset;
