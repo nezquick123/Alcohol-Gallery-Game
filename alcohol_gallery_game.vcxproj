@@ -42,9 +42,11 @@
     <ClCompile Include="torus.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="f_base.glsl" />
     <None Include="f_constant.glsl" />
     <None Include="f_lambert.glsl" />
     <None Include="f_simplest.glsl" />
+    <None Include="v_base.glsl" />
     <None Include="v_constant.glsl" />
     <None Include="v_lambert.glsl" />
     <None Include="v_simplest.glsl" />

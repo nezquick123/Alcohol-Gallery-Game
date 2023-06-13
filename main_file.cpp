@@ -44,7 +44,7 @@ wood texture: https://www.freepik.com/free-photo/wooden-textured-background_2768
 #include <GL/GLU.h>
 #include <windows.h>
 #include <SFML/Audio.hpp>
-void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside=false);
+void textureCube(glm::mat4 M, GLuint tex, glm::vec4 lp, bool inside = false);
 void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool inside = false);
 void drinkingAnimation();
 GLuint tex0;
@@ -133,7 +133,7 @@ GLuint readTexture(const char* filename) { //global declaration
 	glGenerateMipmap(GL_TEXTURE_2D);
 	return tex;
 }
-std::vector <GLuint> bottleTex; 
+std::vector <GLuint> bottleTex;
 
 float* vertices = myCubeVertices;
 float* texCoords = myCubeTexCoords;
@@ -185,13 +185,13 @@ class Collider {
 	glm::vec4 coord; //x1, x2, z1, z2
 	glm::mat3 triangs[4]; //boundary parallel to: ox, oy, ox, oy
 	glm::vec4 edges[4]; //boundary parallel to: ox, oy, ox, oy
-	glm::vec3 center = glm::vec3(0,0, 0);
+	glm::vec3 center = glm::vec3(0, 0, 0);
 
 public:
 	Collider(glm::vec4 vec = glm::vec4(0, 0, 0, 0)) {//x1 y1 x2 y2
 		coord = vec;
-		center.x = (vec.z - vec.x)/2 + vec.x;
-		center.z = (vec.w - vec.y)/2 + vec.y; 
+		center.x = (vec.z - vec.x) / 2 + vec.x;
+		center.z = (vec.w - vec.y) / 2 + vec.y;
 		//vec:  1 1 5 5
 		edges[0] = glm::vec4(vec.x, vec.y, vec.z, vec.y);
 		edges[1] = glm::vec4(vec.x, vec.w, vec.z, vec.w);
@@ -209,7 +209,7 @@ public:
 			bool condition3 = ((edges[i].x - edges[i].z) * (p1.y - edges[i].w) > (edges[i].y - edges[i].w) * (p1.x - edges[i].z));
 			bool condition4 = ((edges[i].x - edges[i].z) * (q1.y - edges[i].w) > (edges[i].y - edges[i].w) * (q1.x - edges[i].z));
 
-			if ((condition1 != condition2) && (condition3 != condition4)){
+			if ((condition1 != condition2) && (condition3 != condition4)) {
 				if (i < 2 == 0) {
 					xcoll = true;
 				}
@@ -318,7 +318,7 @@ public:
 	}
 };
 
-std::vector<std::string> bottleNames = {"models/Carafe_with_stopper.obj", "models/mybottle1.obj", "models/mybottle2.obj", "models/mybottle3.obj" };
+std::vector<std::string> bottleNames = { "models/Carafe_with_stopper.obj", "models/mybottle1.obj", "models/mybottle2.obj", "models/mybottle3.obj" };
 //jack working but too many meshes
 CustomModel table;
 CustomModel bottle;
@@ -356,7 +356,7 @@ void initOpenGLProgram(GLFWwindow* window) {
 	texSpecFloor = readTexture("wood_floor_spec.png");
 	deadFloor = readTexture("dead_text.png");
 	stainedGlass = readTexture("stainedGlass.png");
-	
+
 	bottleTex.push_back(readTexture("glass_orange.png"));
 	bottleTex.push_back(readTexture("green_violet.png"));
 	bottleTex.push_back(readTexture("red_blue.png"));
@@ -412,7 +412,7 @@ int nearestBottle(std::vector<glm::vec3>& positions) {
 }
 
 
-enum wallType{BASIC, WINDOWS, DOOR};
+enum wallType { BASIC, WINDOWS, DOOR };
 
 float sinarg = 0;
 float drunkfun = 0;
@@ -427,7 +427,7 @@ public:
 	}
 
 	void drawPlate(glm::mat4 Mb, glm::vec3 coords, glm::vec3 cubeScal, GLuint tex, GLuint texSpec, bool reflected, float rotateAngle = 0) {
-		drunkfun = drunk_coef * sin(drunk_coef*2*sinarg) + 1.5*drunk_coef;// +drunk_coef;'
+		drunkfun = drunk_coef * sin(drunk_coef * 2 * sinarg) + 1.5 * drunk_coef;// +drunk_coef;'
 		float scalx = 1.0f, scalz = 1.0f;
 		if (drunk_coef != 0.0f) {
 
@@ -442,7 +442,7 @@ public:
 				scalz = abs(drunkfun) * 5;
 		}
 		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
-		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x  + drunkfun , floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
+		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x + drunkfun, floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
 		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
 		textureCubeSpec(Mp, tex, texSpec, lpmain);
 	}
@@ -453,7 +453,7 @@ public:
 		int min, max;
 		int j = 0;
 
-		
+
 
 		if (rotated) {//z axis
 			for (float h = 0; h <= height; h += 1) {
@@ -482,7 +482,7 @@ public:
 						if (!(h >= 2 && h <= 4 && ((j >= 1 && j <= 3) || (j >= 6 && j <= 8))))
 							drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
 					}
-					else 
+					else
 						drawPlate(M, glm::vec3(i, h, var), plateScal, tex0, texSpec, reflected);
 				}
 
@@ -508,7 +508,7 @@ public:
 			offset *= -1;
 		}
 
-		for (int rn = 0; rn <= roomNum -1; rn++) { //room number
+		for (int rn = 0; rn <= roomNum - 1; rn++) { //room number
 			int roomCoord = -50 + 20 * rn;
 			glm::mat4 Ms = glm::mat4(1.0f);
 			if (rotFlag) //rotate and correct x offset
@@ -525,11 +525,11 @@ public:
 
 			//floor
 			for (int i = 0; i < 2; i++) {
-				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y*2, 0.0f));//ceiling if i == 1
+				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 				Mp = glm::scale(Mp, floorScaleVec);
 				textureCube(Mp, tex1, lpmain);
 			}
-			
+
 			//corridor
 			if (rotFlag) { //just for one side
 				glm::mat4 Mc = glm::mat4(1.0f);
@@ -538,13 +538,13 @@ public:
 					glm::mat4 Mw = glm::translate(Mc, glm::vec3(-20.0f, 0.0f, 0.0f));
 					wall.drawWall(1, Mw, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, DOOR);
 				}
-				if (rn == roomNum-1) {
+				if (rn == roomNum - 1) {
 					wall.drawWall(1, Mc, floorScaleVec.z, tex0, texSpecWall, plateScalRot, floorScaleVec.z, !rotFlag, WINDOWS);
 				}
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 					Mc = glm::scale(Mc, floorScaleVec);
-					textureCube(Mc,  tex1 , lpmain);
+					textureCube(Mc, tex1, lpmain);
 					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				}
 			}
@@ -557,25 +557,25 @@ public:
 float collisionXtab[4] = { -40.0f, -20.0f, 0.0f, 20.0f };
 float precisionWall = 1.3f;
 float doorWidth = 2.0f;
-float doorsCoordPos[5] = { -55.0f, -35.0f, -15.0f, 5.0f, 25.0f};
+float doorsCoordPos[5] = { -55.0f, -35.0f, -15.0f, 5.0f, 25.0f };
 float doorsCoordNeg[5] = { -45.0f, -25.0f, -5.0f, 15.0f, 35.0f };
 int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x axis, 2 - wall parallel to z axis, 3 - both(corner)
 	bool xwall = false;
 	bool zwall = false;//TODO: find better name  ( ͡° ͜ʖ ͡°)
-	if (pos.z > 28.0f || pos.z < -28.0f){ //boundaries detection
+	if (pos.z > 28.0f || pos.z < -28.0f) { //boundaries detection
 		//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 		zwall = true;
 	}
-	if (pos.x > 38.0f  || pos.x < -58.0f) {
-		xwall = true; 
+	if (pos.x > 38.0f || pos.x < -58.0f) {
+		xwall = true;
 	}
 	if (pos.z > 8.5f || pos.z < -8.5f) {
 		for (int i = 0; i < 4; i++) {
-			if (abs(pos.x - collisionXtab[i]) < precisionWall+abs(drunkfun)*5) {
+			if (abs(pos.x - collisionXtab[i]) < precisionWall + abs(drunkfun) * 5) {
 				xwall = true;
 			}
 		}
-		if (abs(pos.z - 10.0f) < 1.3f+abs(drunkfun) * 5) {
+		if (abs(pos.z - 10.0f) < 1.3f + abs(drunkfun) * 5) {
 			//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
 				if (abs(pos.x - doorsCoordPos[i]) < doorWidth) {
@@ -586,9 +586,9 @@ int collisionDetected(glm::vec3 pos) {//0 - no collision, 1 - wall parallel to x
 				}
 				zwall = true;
 			}
-			
+
 		}
-		else if (abs(pos.z + 10.0f) < 1.3f ) {
+		else if (abs(pos.z + 10.0f) < 1.3f) {
 			//std::cout << cameraPos.x << " " << cameraPos.z << std::endl;
 			for (int i = 0; i < 5; i++) {
 				if (abs(pos.x - doorsCoordNeg[i]) < doorWidth) {
@@ -687,7 +687,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 	int collRes = 0;
 	bool collx = false;
 	bool colly = false;
-	collRes = collisionDetected(cameraPos);
+	//collRes = collisionDetected(cameraPos);
 	if (collRes == 3) {
 		collx = true;
 		colly = true;
@@ -727,14 +727,16 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 			//std::cout << "2" << std::endl;
 		}
 	}
+	else
+		cameraPos += glm::vec3(0, 0.01f, 0);
 	glm::vec3 cameraDir = glm::vec3(cameraPos.x + cameraFront.x, cameraFront.y, cameraPos.z + cameraFront.z); // ????
-	glm::mat4 P = glm::perspective(glm::radians(50.0f + sin(sinarg * 2 * drunk_coef)*drunk_coef*20), 1.0f, 1.0f, 150.0f); //Compute projection matrix
+	glm::mat4 P = glm::perspective(glm::radians(50.0f + sin(sinarg * 2 * drunk_coef) * drunk_coef * 20), 1.0f, 1.0f, 150.0f); //Compute projection matrix
 	glm::mat4 V = glm::lookAt(cameraPos,
-		cameraPos + cameraFront + glm::vec3(0.0f + sin(sinarg* 2*drunk_coef) * drunk_coef * 1/2, lookupAngle + cos(sinarg * 2 * drunk_coef) * drunk_coef * 1/2, 0.0f + sin(sinarg * 2 * drunk_coef) * drunk_coef * 1/2),
+		cameraPos + cameraFront + glm::vec3(0.0f + sin(sinarg * 2 * drunk_coef) * drunk_coef * 1 / 2, lookupAngle + cos(sinarg * 2 * drunk_coef) * drunk_coef * 1 / 2, 0.0f + sin(sinarg * 2 * drunk_coef) * drunk_coef * 1 / 2),
 		glm::vec3(0.0f, 1.0f, 0.0f)); //Compute view matrix
 	//V = glm::rotate(V, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	
+
 	sp->use();//activate shading program
 	//Send parameters to graphics card
 	glUniformMatrix4fv(sp->u("P"), 1, false, glm::value_ptr(P));
@@ -743,30 +745,30 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 
 	//modelPos.clear();
 
-	
+
 	f.draw(10.0f);
-	f.draw(-20.0f); 
+	f.draw(-20.0f);
 
 	glm::mat4 M = glm::mat4(1.0f);
 	for (int i = 0; i < collidingModels.size(); i++) {
-		
+
 		//tables drawing
 		M = glm::mat4(1.0f);
 		M = glm::translate(M, glm::vec3(collidingModels.at(i).pos.x - 1.0f, collidingModels.at(i).pos.y, collidingModels.at(i).pos.z - 1.0f));
 		collidingModels.at(i).draw(M, woodtex, lpmain);
 		if (!bottleExists(i, bottlesStillStanding)) continue;
-		
+
 		//bottles drawing
 		M = glm::translate(M, glm::vec3(1.0f, 1.7f, 1.0f));
 		M = glm::scale(M, glm::vec3(5.0f, 5.0f, 5.0f));
 		bottleModels[i].draw(M, bottleTex[textureIndices[i]], lpmain);
 	}
 
-	
+
 	//Skybox
 	M = glm::mat4(1.0f);
 	M = glm::scale(M, glm::vec3(80.0f, 100.0f, 70.0f));
-	textureCube(M, skytex, glm::vec4(0.0f, 300.0f, 0.0f, 1.0f), true);
+	textureCube(M, skytex, glm::vec4(0.0f, 50.0f, 0.0f, 1.0f), true);
 
 	M = glm::mat4(1.0f);
 	M = glm::translate(M, cameraPos);
@@ -813,7 +815,7 @@ int main(void)
 
 	//SFML
 	sf::SoundBuffer buffer1, buffer2, buffer3, buffer4, buffer5, buffer6;
-	if (!buffer1.loadFromFile("entertainer.wav") 
+	if (!buffer1.loadFromFile("entertainer.wav")
 		|| !buffer2.loadFromFile("drink.wav")
 		|| !buffer3.loadFromFile("entertainer125.wav")
 		|| !buffer4.loadFromFile("entertainer150.wav")
@@ -834,7 +836,7 @@ int main(void)
 
 	float music125toggleTime = 0;
 	float music150toggleTime = 0;
-	
+
 	float startAngle = 0.0f;
 	float musicPitch = 1;
 	float musicVolume = 10;
@@ -845,7 +847,7 @@ int main(void)
 	while (!glfwWindowShouldClose(window) && !close) //As long as the window shouldnt be closed yet...
 	{
 		sinarg = glfwGetTime();
-		
+
 		std::cout << sinarg << std::endl;
 		//glfwSetTime(0); //clear internal timer
 		if (!ascending) startAngle = 0.0f;
@@ -882,17 +884,19 @@ int main(void)
 			}
 			if (drunkLevel == 9) {
 				backgroundMusic.setBuffer(buffer5);
-				float normalSongTime = music125toggleTime  + (music150toggleTime - music125toggleTime) * 125 / 100 + (glfwGetTime() - music150toggleTime) * 150 / 100;
+				float normalSongTime = music125toggleTime + (music150toggleTime - music125toggleTime) * 125 / 100 + (glfwGetTime() - music150toggleTime) * 150 / 100;
 				startOffset = sf::seconds(normalSongTime * 100.0 / 175.0);
 				backgroundMusic.setPlayingOffset(startOffset);
 				backgroundMusic.play();
 			}
 			if (drunkLevel == 10) {
 				drunk_coef = 0.0;
+				musicVolume *= 2;
+				backgroundMusic.setVolume(musicVolume);
 				backgroundMusic.setBuffer(buffer6);
 				backgroundMusic.play();
 				defaultSpeed /= 6.0;
-	
+
 			}
 		}
 
@@ -908,9 +912,10 @@ int main(void)
 			timeToStop = glfwGetTime() + 5.0f;
 			ascending = true;
 			while (glfwGetTime() < timeToStop) {
-				cameraPos += glm::vec3(0, 0.01f, 0);
+				
 				drawScene(window, startAngle);
 			}
+			
 			drinkUp = false;
 			moveSpeedx = -0.08f;
 			ending = true;
@@ -925,4 +930,3 @@ int main(void)
 	glfwTerminate(); //Free GLFW resources
 	exit(EXIT_SUCCESS);
 }
- 
