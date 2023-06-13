@@ -687,7 +687,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 	int collRes = 0;
 	bool collx = false;
 	bool colly = false;
-	//collRes = collisionDetected(cameraPos);
+	collRes = collisionDetected(cameraPos);
 	if (collRes == 3) {
 		collx = true;
 		colly = true;
@@ -909,7 +909,7 @@ int main(void)
 				drawScene(window, startAngle);
 				startAngle += 0.02f;
 			}
-			timeToStop = glfwGetTime() + 5.0f;
+			timeToStop = glfwGetTime() + 3.0f;
 			ascending = true;
 			while (glfwGetTime() < timeToStop) {
 				
