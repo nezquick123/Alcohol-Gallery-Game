@@ -36,8 +36,8 @@ void main(void) {
     //vec4 ks = texture(textureMap1, iTexCoord0);
     //float brightness = 0.6;
     if(negate == 1){
-    kd.rgb *= 0.6;
-    kd.rgb *= 0.6;
+        kd.rgb *= 0.6;
+        kd.rgb *= 0.6;
     } else {
         kd.rgb *= brightness;
         kd.rgb *= brightness;

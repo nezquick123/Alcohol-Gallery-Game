@@ -57,6 +57,12 @@ GLuint stainedGlass;
 GLuint texSpecWall;
 GLuint texSpecFloor;
 
+GLuint texWhiteFloor;
+GLuint texWhiteFloorSpec;
+
+GLuint texWhiteWall;
+GLuint texWhiteWallSpec;
+
 int textureIndices[10];
 std::vector<glm::mat4> modelPos;
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
@@ -355,12 +361,20 @@ void initOpenGLProgram(GLFWwindow* window) {
 	woodtex = readTexture("wood.png");
 	//orangeGlass = readTexture("glass_orange.png");
 	table.load("models/tableround.obj");
-	tex0 = readTexture("wood_texture.png");
-	tex1 = readTexture("floor_text.png");
-	texSpecWall = readTexture("wood_specular.png");
-	texSpecFloor = readTexture("wood_floor_spec.png");
+	tex0 = readTexture("wallText.png");
+	texSpecWall = readTexture("wallTextSpec.png");
+
+	tex1 = readTexture("floorText.png");
+	texSpecFloor = readTexture("floorTextSpec.png");
+
 	deadFloor = readTexture("dead_text.png");
 	stainedGlass = readTexture("stainedGlass.png");
+
+	texWhiteFloor = readTexture("whiteFloor.png");
+	texWhiteFloorSpec = readTexture("whiteFloorSpec.png");
+
+	texWhiteWall = readTexture("whiteWall.png");
+	texWhiteWallSpec = readTexture("whiteWallSpec.png");
 
 	bottleTex.push_back(readTexture("glass_orange.png"));
 	bottleTex.push_back(readTexture("green_violet.png"));
@@ -449,7 +463,13 @@ public:
 		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x + drunkfun, floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
 		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
-		textureCubeSpec(Mp, tex, texSpec, lpmain);
+		if (drunkLevel < 10) {
+			textureCubeSpec(Mp, tex, texSpec, lpmain);
+		}
+		else {
+			textureCubeSpec(Mp, texWhiteWall, texWhiteWallSpec, lpmain);
+		}
+		
 	}
 
 	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, GLuint texSpec, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
@@ -532,7 +552,13 @@ public:
 			for (int i = 0; i < 2; i++) {
 				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 				Mp = glm::scale(Mp, floorScaleVec);
-				textureCube(Mp, tex1, lpmain);
+				if (drunkLevel < 10) {
+					textureCubeSpec(Mp, tex1, texSpecFloor, lpmain);
+				}
+				else {
+					textureCubeSpec(Mp, texWhiteFloor, texWhiteFloorSpec, lpmain);
+				}
+				
 			}
 
 			//corridor
@@ -549,7 +575,13 @@ public:
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 					Mc = glm::scale(Mc, floorScaleVec);
-					textureCube(Mc, tex1, lpmain);
+					if (drunkLevel < 10) {
+						textureCubeSpec(Mc, tex1, texSpecFloor, lpmain);
+					}
+					else {
+						textureCubeSpec(Mc, texWhiteFloor, texWhiteFloorSpec, lpmain);
+					}
+					
 					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				}
 			}
