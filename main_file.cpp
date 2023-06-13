@@ -141,6 +141,7 @@ float* colors = myCubeColors;
 float* normals = myCubeNormals;
 int vertexCount = myCubeVertexCount;
 bool close = false;
+bool ending = false;
 //Error processing callback procedure
 void error_callback(int error, const char* description) {
 	fputs(description, stderr);
@@ -154,10 +155,13 @@ void key_callback(GLFWwindow* window, int key,
 	int scancode, int action, int mods) {
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_W) moveSpeedx = -defaultSpeed;
-		if (key == GLFW_KEY_S) moveSpeedx = defaultSpeed;
-		if (key == GLFW_KEY_A) moveSpeedz = -defaultSpeed;
-		if (key == GLFW_KEY_D) moveSpeedz = defaultSpeed;
+		if (!ending) {
+			if (key == GLFW_KEY_W) moveSpeedx = -defaultSpeed;
+			if (key == GLFW_KEY_S) moveSpeedx = defaultSpeed;
+			if (key == GLFW_KEY_A) moveSpeedz = -defaultSpeed;
+			if (key == GLFW_KEY_D) moveSpeedz = defaultSpeed;
+		}
+
 		if (key == GLFW_KEY_ESCAPE) close = true;
 		if (key == GLFW_KEY_E) drinkUp = true;
 		if (key == GLFW_KEY_F) drunkLevel = 10.0f;
@@ -674,7 +678,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
 }
-bool ending = false;
+
 //Drawing procedure
 void drawScene(GLFWwindow* window, float lookupAngle) {
 	//************Place any code here that draws something inside the window******************l
@@ -911,13 +915,13 @@ int main(void)
 			}
 			timeToStop = glfwGetTime() + 3.0f;
 			ascending = true;
-			while (glfwGetTime() < timeToStop) {
+			/*while (glfwGetTime() < timeToStop) {
 				
 				drawScene(window, startAngle);
-			}
+			}*/
 			
 			drinkUp = false;
-			moveSpeedx = -0.08f;
+			//moveSpeedx = -0.08f;
 			ending = true;
 		}
 
