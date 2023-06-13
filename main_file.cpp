@@ -76,6 +76,7 @@ float lastY = 900.0f / 2.0;
 float fov = 45.0f;
 float drunk_coef = 0.0f; //test conflict
 byte drunkLevel = 0;
+float brightness = 1;
 bool drinkUp = false;
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
@@ -668,7 +669,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, texSpec);
 
-
+	glUniform1f(sp->u("brightness"), brightness);
 
 	/// //////////////////////////////////////
 
@@ -677,6 +678,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
 	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+	glDisableVertexAttribArray(sp->a("brightness")); //Disable sending data to the attribute normal
 }
 
 //Drawing procedure
