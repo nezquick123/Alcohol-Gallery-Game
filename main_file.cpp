@@ -73,7 +73,7 @@ glm::vec3 tempCam = cameraPos;
 float moveSpeedx = 0;
 float moveSpeedz = 0;
 ShaderProgram* sp; //Pointer to the shader program
-glm::vec4 lpmain = glm::vec4(0, 9, 0, 1); //light position, world space
+glm::vec4 lpmain = glm::vec4(0, 9.5, 0, 1); //light position, world space
 
 
 bool firstMouse = true;
@@ -819,7 +819,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 		glm::mat4 M = glm::mat4(1.0f);
 		M = glm::translate(M, glm::vec3(1.0f, 5.0f, 1.0f));
 		M = glm::scale(M, glm::vec3(20.0f, 20.0f, 20.0f));
-		gigaBottle.draw(M, stainedGlass, lpmain);
+		gigaBottle.draw(M, stainedGlass, glm::vec4(1.0f, 5.0f, 1.0f, 1.0f));
 	}
 
 	glfwSwapBuffers(window); //Copy back buffer to the front buffer
