@@ -57,6 +57,14 @@ GLuint stainedGlass;
 GLuint texSpecWall;
 GLuint texSpecFloor;
 
+GLuint texWhiteFloor;
+GLuint texWhiteFloorSpec;
+
+GLuint texWhiteWall;
+GLuint texWhiteWallSpec;
+
+GLuint plainWhite;
+
 int textureIndices[10];
 std::vector<glm::mat4> modelPos;
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
@@ -76,6 +84,7 @@ float lastY = 900.0f / 2.0;
 float fov = 45.0f;
 float drunk_coef = 0.0f; //test conflict
 byte drunkLevel = 0;
+float brightness = 1;
 bool drinkUp = false;
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
@@ -141,6 +150,7 @@ float* colors = myCubeColors;
 float* normals = myCubeNormals;
 int vertexCount = myCubeVertexCount;
 bool close = false;
+bool ending = false;
 //Error processing callback procedure
 void error_callback(int error, const char* description) {
 	fputs(description, stderr);
@@ -154,10 +164,13 @@ void key_callback(GLFWwindow* window, int key,
 	int scancode, int action, int mods) {
 
 	if (action == GLFW_PRESS) {
-		if (key == GLFW_KEY_W) moveSpeedx = -defaultSpeed;
-		if (key == GLFW_KEY_S) moveSpeedx = defaultSpeed;
-		if (key == GLFW_KEY_A) moveSpeedz = -defaultSpeed;
-		if (key == GLFW_KEY_D) moveSpeedz = defaultSpeed;
+		if (!ending) {
+			if (key == GLFW_KEY_W) moveSpeedx = -defaultSpeed;
+			if (key == GLFW_KEY_S) moveSpeedx = defaultSpeed;
+			if (key == GLFW_KEY_A) moveSpeedz = -defaultSpeed;
+			if (key == GLFW_KEY_D) moveSpeedz = defaultSpeed;
+		}
+
 		if (key == GLFW_KEY_ESCAPE) close = true;
 		if (key == GLFW_KEY_E) drinkUp = true;
 		if (key == GLFW_KEY_F) drunkLevel = 10.0f;
@@ -350,12 +363,22 @@ void initOpenGLProgram(GLFWwindow* window) {
 	woodtex = readTexture("wood.png");
 	//orangeGlass = readTexture("glass_orange.png");
 	table.load("models/tableround.obj");
-	tex0 = readTexture("wood_texture.png");
-	tex1 = readTexture("floor_text.png");
-	texSpecWall = readTexture("wood_specular.png");
-	texSpecFloor = readTexture("wood_floor_spec.png");
+	tex0 = readTexture("wallText.png");
+	texSpecWall = readTexture("wallTextSpec.png");
+
+	tex1 = readTexture("floorText.png");
+	texSpecFloor = readTexture("floorTextSpec.png");
+
 	deadFloor = readTexture("dead_text.png");
 	stainedGlass = readTexture("stainedGlass.png");
+
+	texWhiteFloor = readTexture("whiteFloor.png");
+	texWhiteFloorSpec = readTexture("whiteFloorSpec.png");
+
+	texWhiteWall = readTexture("whiteWall.png");
+	texWhiteWallSpec = readTexture("whiteWallSpec.png");
+
+	plainWhite = readTexture("black.png");
 
 	bottleTex.push_back(readTexture("glass_orange.png"));
 	bottleTex.push_back(readTexture("green_violet.png"));
@@ -444,7 +467,13 @@ public:
 		glm::mat4 Mp = glm::rotate(Mb, rotateAngle, glm::vec3(0.0f, 1.0f, 0.0f));
 		Mp = glm::translate(Mb, glm::vec3(coords.x + cubeScal.x + drunkfun, floorH + coords.y * 2 * cubeScal.y, coords.z + cubeScal.z + drunkfun));
 		Mp = glm::scale(Mp, glm::vec3(cubeScal.x * scalx, cubeScal.y, cubeScal.z * scalz));
-		textureCubeSpec(Mp, tex, texSpec, lpmain);
+		if (drunkLevel < 10) {
+			textureCubeSpec(Mp, tex, texSpec, lpmain);
+		}
+		else {
+			textureCubeSpec(Mp, texWhiteWall, texWhiteWallSpec, lpmain);
+		}
+		
 	}
 
 	void drawWall(bool rotated, glm::mat4 M, float var, GLuint tex, GLuint texSpec, glm::vec3 plateScal, float range, bool reflected, wallType wt = BASIC) {
@@ -527,7 +556,13 @@ public:
 			for (int i = 0; i < 2; i++) {
 				glm::mat4 Mp = glm::translate(Ms, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 				Mp = glm::scale(Mp, floorScaleVec);
-				textureCube(Mp, tex1, lpmain);
+				if (drunkLevel < 10) {
+					textureCubeSpec(Mp, tex1, texSpecFloor, lpmain);
+				}
+				else {
+					textureCubeSpec(Mp, texWhiteFloor, texWhiteFloorSpec, lpmain);
+				}
+				
 			}
 
 			//corridor
@@ -544,7 +579,13 @@ public:
 				for (int i = 0; i < 2; i++) {
 					Mc = glm::translate(Mc, glm::vec3(0.0f, i * height * plateScalRot.y * 2, 0.0f));//ceiling if i == 1
 					Mc = glm::scale(Mc, floorScaleVec);
-					textureCube(Mc, tex1, lpmain);
+					if (drunkLevel < 10) {
+						textureCubeSpec(Mc, tex1, texSpecFloor, lpmain);
+					}
+					else {
+						textureCubeSpec(Mc, texWhiteFloor, texWhiteFloorSpec, lpmain);
+					}
+					
 					Mc = glm::translate(glm::mat4(1.0f), glm::vec3((float)roomCoord, 0.0f, 0.0f));
 				}
 			}
@@ -664,7 +705,7 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_2D, texSpec);
 
-
+	glUniform1f(sp->u("brightness"), brightness);
 
 	/// //////////////////////////////////////
 
@@ -673,8 +714,9 @@ void textureCubeSpec(glm::mat4 M, GLuint tex, GLuint texSpec, glm::vec4 lp, bool
 	glDisableVertexAttribArray(sp->a("vertex")); //Disable sending data to the attribute vertex
 	glDisableVertexAttribArray(sp->a("color")); //Disable sending data to the attribute color
 	glDisableVertexAttribArray(sp->a("normal")); //Disable sending data to the attribute normal
+	glDisableVertexAttribArray(sp->a("brightness")); //Disable sending data to the attribute normal
 }
-bool ending = false;
+
 //Drawing procedure
 void drawScene(GLFWwindow* window, float lookupAngle) {
 	//************Place any code here that draws something inside the window******************l
@@ -768,7 +810,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 	//Skybox
 	M = glm::mat4(1.0f);
 	M = glm::scale(M, glm::vec3(80.0f, 100.0f, 70.0f));
-	textureCube(M, skytex, glm::vec4(0.0f, 50.0f, 0.0f, 1.0f), true);
+	textureCubeSpec(M, skytex, plainWhite, glm::vec4(0.0f, 50.0f, 0.0f, 1.0f), true);
 
 	M = glm::mat4(1.0f);
 	M = glm::translate(M, cameraPos);
@@ -901,8 +943,8 @@ int main(void)
 		}
 
 		if (drinkUp && nearestBottle(bottlePositions) == 10 && drunkLevel == 10) {
-			/*moveSpeedx = 0;
-			moveSpeedz = 0;*/
+			moveSpeedx = 0;
+			moveSpeedz = 0;
 			double timeToStop = glfwGetTime() + 5.0f;
 			drinkingSound.play();
 			while (glfwGetTime() < timeToStop) {
@@ -911,13 +953,8 @@ int main(void)
 			}
 			timeToStop = glfwGetTime() + 3.0f;
 			ascending = true;
-			while (glfwGetTime() < timeToStop) {
-				
-				drawScene(window, startAngle);
-			}
 			
 			drinkUp = false;
-			moveSpeedx = -0.08f;
 			ending = true;
 		}
 

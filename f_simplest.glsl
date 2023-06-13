@@ -12,7 +12,7 @@ in vec2 iTexCoord2;
 uniform sampler2D textureMap0;
 uniform sampler2D textureMap1;
 uniform int negate;
-//uniform sampler2D textureMap2;
+uniform float brightness;
 void main(void) {
     //Normalized, interpolated vectors
     vec4 ml = normalize(l);
@@ -34,11 +34,16 @@ void main(void) {
     // Chaotic better
     //vec4 kd = mix(texture(textureMap0, iTexCoord0), texture(textureMap2, iTexCoord2),0.5);
     //vec4 ks = texture(textureMap1, iTexCoord0);
-    float brightness = 0.6;
+    //float brightness = 0.6;
     if(negate == 1){
-    kd.rgb *= brightness;
-    kd.rgb *= brightness;
+        kd.rgb *= 0.6;
+        kd.rgb *= 0.6;
+    } else {
+        kd.rgb *= brightness;
+        kd.rgb *= brightness;
     }
+    
+
     //Lighting model computation
     float nl = clamp(dot(mn, ml), 0, 1);
     float rv = pow(clamp(dot(mr, mv), 0, 1), 50);
