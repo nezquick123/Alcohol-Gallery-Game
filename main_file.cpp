@@ -63,6 +63,8 @@ GLuint texWhiteFloorSpec;
 GLuint texWhiteWall;
 GLuint texWhiteWallSpec;
 
+GLuint plainWhite;
+
 int textureIndices[10];
 std::vector<glm::mat4> modelPos;
 glm::vec3 cameraPos = glm::vec3(0.0f, 7.0f, 0.0f);
@@ -375,6 +377,8 @@ void initOpenGLProgram(GLFWwindow* window) {
 
 	texWhiteWall = readTexture("whiteWall.png");
 	texWhiteWallSpec = readTexture("whiteWallSpec.png");
+
+	plainWhite = readTexture("black.png");
 
 	bottleTex.push_back(readTexture("glass_orange.png"));
 	bottleTex.push_back(readTexture("green_violet.png"));
@@ -806,7 +810,7 @@ void drawScene(GLFWwindow* window, float lookupAngle) {
 	//Skybox
 	M = glm::mat4(1.0f);
 	M = glm::scale(M, glm::vec3(80.0f, 100.0f, 70.0f));
-	textureCube(M, skytex, glm::vec4(0.0f, 50.0f, 0.0f, 1.0f), true);
+	textureCubeSpec(M, skytex, plainWhite, glm::vec4(0.0f, 50.0f, 0.0f, 1.0f), true);
 
 	M = glm::mat4(1.0f);
 	M = glm::translate(M, cameraPos);
@@ -939,8 +943,8 @@ int main(void)
 		}
 
 		if (drinkUp && nearestBottle(bottlePositions) == 10 && drunkLevel == 10) {
-			/*moveSpeedx = 0;
-			moveSpeedz = 0;*/
+			moveSpeedx = 0;
+			moveSpeedz = 0;
 			double timeToStop = glfwGetTime() + 5.0f;
 			drinkingSound.play();
 			while (glfwGetTime() < timeToStop) {
@@ -949,13 +953,8 @@ int main(void)
 			}
 			timeToStop = glfwGetTime() + 3.0f;
 			ascending = true;
-			/*while (glfwGetTime() < timeToStop) {
-				
-				drawScene(window, startAngle);
-			}*/
 			
 			drinkUp = false;
-			//moveSpeedx = -0.08f;
 			ending = true;
 		}
 
